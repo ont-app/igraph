@@ -31,9 +31,9 @@ Where
   (get-p-o [g s])
   (get-o [g s p])
   (ask [g s p o])
+  (invoke [g s] [g s p] [g s p o])
   )
 
-(declare make-graph)
 
 (deftype Graph [schema contents]
   IGraph
@@ -51,7 +51,12 @@ Where
                                       (get-in (.contents g) [s p] #{}))))))
   (get-p-o [g s] (get (.contents g) s))
   (get-o [g s p] (get-in (.contents g) [s p]))
-  (ask [g s p o] (not (not (get-in (.contents g) [s p o])))))
+  (ask [g s p o] (not (not (get-in (.contents g) [s p o]))))
+  
+  clojure.lang.IFn
+  (invoke [g s] (get-p-o g s))
+  (invoke [g s p] (get-o g s p))
+  (invoke [g s p o] (ask g s p o)))
 
 
                        
