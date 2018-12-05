@@ -31,6 +31,7 @@ Where
   (get-p-o [g s])
   (get-o [g s p])
   (ask [g s p o])
+  (query [g q])
   ;; for IFn
   (invoke [g s] [g s p] [g s p o])
   )
@@ -48,6 +49,9 @@ This is one of #{:vector-of-triples :triple (type <to-add)}
 
 (defmulti add-to-graph add-to-graph-dispatcher)
 
+
+(declare query-graph)
+                        
 (deftype Graph [schema contents]
   IGraph
   (normal-form [g]
@@ -58,7 +62,7 @@ This is one of #{:vector-of-triples :triple (type <to-add)}
   (get-p-o [g s] (get (.contents g) s))
   (get-o [g s p] (get-in (.contents g) [s p]))
   (ask [g s p o] (not (not (get-in (.contents g) [s p o]))))
-  
+  (query [g q] (query-graph g q))
   clojure.lang.IFn
   (invoke [g s] (get-p-o g s))
   (invoke [g s p] (get-o g s p))
@@ -326,7 +330,6 @@ This is one of #{:vector-of-triples :triple (type <to-add)}
   "
   [g query-state clause-state match]
   (def _query-state query-state)
-  #dbg
   (assoc clause-state
          :bindings
          (set/union
@@ -432,7 +435,6 @@ Note: this is typically used to populate the 'specified' graph in
     
 
 (defn test-collect-clause-matches-1 []
-  #dbg
   (let [clauses (-> test-query-1
                          :where)
         ]
@@ -442,7 +444,6 @@ Note: this is typically used to populate the 'specified' graph in
 
 
 (defn test-collect-clause-matches-2 []
-  #dbg
   (let [clauses (-> test-query-2
                          :where)
         ]
@@ -450,7 +451,12 @@ Note: this is typically used to populate the 'specified' graph in
             {}
             clauses)))
 
-
+(defn query-graph
+  [g graph-pattern]
+  (reduce (partial -collect-clause-matches test-graph)
+          {}
+          graph-pattern))
+  
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
