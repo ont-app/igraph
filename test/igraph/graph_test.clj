@@ -4,7 +4,7 @@
             [igraph.graph :refer :all]
             ))
 
-(def test-graph (let [g (make-graph)
+(defonce test-graph (let [g (make-graph)
                       ]
                   (add g
                         [[:john :isa :person]
@@ -15,14 +15,46 @@
                          [:mary :likes :coke]
                          [:meat :isa :food]
                          [:coke :isa :drink]
-                         [:mary :name {:value "mary" :lang "en"}]
-                         [:john :name {:value "john" :lang "en"}]
+                         [:mary :name {:value "Mary" :lang "en"}]
+                         [:john :name {:value "John" :lang "en"}]
                          ])))
 
+
+(deftest invoke-test
+  (testing "Invokes the test-graph as a function with different arities"
+    (is (= (test-graph) ;; returns (normal-form g)
+           {:john
+            {:isa #{:person},
+             :likes #{:meat},
+             :name #{{:value "John", :lang "en"}}},
+            :mary
+            {:isa #{:person},
+             :likes #{:coke},
+             :name #{{:value "Mary", :lang "en"}}},
+            :likes {:isa #{:property}},
+            :isa {:isa #{:property}},
+            :meat {:isa #{:food}},
+            :coke {:isa #{:drink}}}))
+    (is (= (test-graph :john) ;; returns (get-p-o g s)
+           {:isa #{:person},
+            :likes #{:meat},
+            :name #{{:value "John", :lang "en"}}}))
+    (is (= (test-graph :john :likes) ;; returns (get-o g s p)
+           #{:meat}))
+    (is (= (test-graph :john :likes :meat) ;; returns (ask g s p o)
+           :meat))
+  ))
+
 (deftest query-test
-  (testing "Tests a basic query against a dummy test-graph"
+  (testing "Tests a basic query against the dummy test-graph"
     (is (= (query test-graph
                   [[:?liker :likes :?likee]
                    [:?likee :isa :?type]])
-           #{{:?type :drink, :?likee :coke, :?liker :mary} {:?type :food, :?likee :meat, :?liker :john}}))))
+           #{{:?type :drink,
+              :?likee :coke,
+              :?liker :mary}
+             {:?type :food,
+              :?likee :meat,
+              :?liker :john}}
+           ))))
 

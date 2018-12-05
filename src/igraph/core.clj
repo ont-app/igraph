@@ -4,12 +4,11 @@ other basic clojure data structures such as maps and sequences.
 "}
     igraph.core
   (:require [clojure.set :as set]
-            )
-  #_(:gen-class))
+            ))
 
 
 (defprotocol IGraph
-  "An abstraction for graphs"
+  "An abstraction for S-P-O graphs"
   (normal-form [g] "Returns {<s> {<p> #{<o>...}...}...}
 Where 
 <s> is the subject of a triple := [<s> <p> <o>] in <g>

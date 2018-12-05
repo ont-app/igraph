@@ -3,7 +3,7 @@
 IGraph defines a protocol which aims to capture some generality amongst a 
 plurality of graph-based representations (RDF, datascript, datomic....)
 
-There is also a type Graph defined which implemens IGraph.
+There is also a type Graph defined which implements IGraph.
 
 
 ## Installation
