@@ -1,15 +1,26 @@
 (ns ^{:author "Eric D. Scott",
-      :doc "Implementation of a simple graph type implementing IGraph"}
+      :doc "Implementation of a simple graph type implementing IGraph.
+On typically adds to it with [[<s> <p> <o>]...].
+One queries it with a simple graph pattern of the form [[<s> <p> <o>]...]
+With variables of the form :?x.
+"}
     igraph.graph
   (:require [clojure.set :as set]
             [igraph.core :refer :all]
             )
-  (:gen-class))
+  #_(:gen-class))
 
 (defn add-to-graph-dispatcher [g to-add]
-  "Returns dispatcher for add method given <g> and <to-add>
-This is one of #{:vector-of-triples :triple (type <to-add)}
-  " 
+  "Returns one of #{:triple :vector-of-triples <type>} for <args>
+  Where
+  <args> := [<g> <to-add>],  arguments to a method add-to-graph
+  <g> is a graph
+  <to-add> is a specification of triples to add to <g>
+  <triple> indicates <to-add> := [<s> <p> <o>]
+  <vector-of-triples> indicates <to-add> := [<triple>...]
+  <type> = (type <to-add>)
+  "
+
   (if (= (type to-add) clojure.lang.PersistentVector)
     (if (= (type (to-add 0)) clojure.lang.PersistentVector)
       :vector-of-triples
@@ -18,27 +29,23 @@ This is one of #{:vector-of-triples :triple (type <to-add)}
     (type to-add)))
 
 (defmulti add-to-graph
-  "Returns one of #{:triple :vector-of-triples <type>} for <args>
+  "Returns <g>, with <to-add> added
   Where
-  <args> := [<g> <to-add>],  arguments to a method add-to-graph
-  <g> is a graph
-  <to-add> is a specification of triples to add to <g>
-  <triple> indicates <to-add> := [<s> <p> <o>]
-  <vector-of-triples> indicates <to-add> := [<triple>...]
-  <type> is the type of <to-add>
+  <g> is a Graph
+  <to-add> is interpetable as a set of triples
   "
   add-to-graph-dispatcher)
 
-(declare make-graph) ;; defined below
+
 (declare query-graph) ;; defined below
-                        
+
 (deftype Graph [schema contents]
   IGraph
   (normal-form [g](.contents g))
   (add [g to-add] (add-to-graph g to-add))
   (get-p-o [g s] (get (.contents g) s))
   (get-o [g s p] (get-in (.contents g) [s p]))
-  (ask [g s p o] (not (not (get-in (.contents g) [s p o]))))
+  (ask [g s p o] (get-in (.contents g) [s p o]))
   (query [g q] (query-graph g q))
   
   clojure.lang.IFn
@@ -48,6 +55,17 @@ This is one of #{:vector-of-triples :triple (type <to-add)}
   (invoke [g s p o] (ask g s p o)))
 
 
+(defn make-graph
+  "Returns <graph>, intialized per optional <schema> and <contents>
+  Where
+  <schema> is not presently used
+  <contents> is a normal-form representation of initial contents.
+    see also igraph/normal-form.
+  "
+  ([&{:keys [schema contents]
+      :or {schema [::subject ::predicate ::object] ;; TODO make this relevant
+           contents {}}}]
+   (Graph. schema contents)))
 
 (defmethod add-to-graph :vector-of-triples [g triples]
   (let [collect-triple (fn [acc triple]
@@ -71,30 +89,7 @@ This is one of #{:vector-of-triples :triple (type <to-add)}
 (defmethod add-to-graph :default [g to-add]
   (throw (Exception. (str "No add-to-graph defined for " (type to-add)))))
 
-(defn make-graph
-  "Returns <graph>, intialized per optional <schema> and <contents>
-  "
-  ([&{:keys [schema contents]
-      :or {schema [::subject ::predicate ::object]
-           contents {}}}]
-   (Graph. schema contents)))
 
-(def test-graph (let [g (make-graph)
-                      ]
-                  (add g
-                        [[:john :isa :person]
-                         [:mary :isa :person]
-                         [:likes :isa :property]
-                         [:isa :isa :property]
-                         [:john :likes :meat]
-                         [:mary :likes :coke]
-                         [:meat :isa :food]
-                         [:meat :isa :killer]
-                         [:coke :isa :drink]
-                         [:coke :isa :killer]
-                         [:mary :name {:value "mary" :lang "en"}]
-                         [:john :name {:value "john" :lang "en"}]
-                         ])))
   
 
 
@@ -191,14 +186,6 @@ Where
      next-o
      {:matched? (-matches-spec? context o next-o)})))
                                 
-
-
-(defn test-o-match
-  []
-  (let [g (.add (make-graph) [:a :b :c])
-        ]
-    (-o-match g {:s :a :p :b :spec [:c]} :c)))
-
 (defn -p-o-matches
   "Returns <match-results> for <g> in <context> given <next-p>
   Where
@@ -226,14 +213,6 @@ Where
                                         :p p
                                         :spec [o]))
                         (g (:s context) next-p)))))))
-
-(defn test-p-o-matches []
-  (let [g (.add (make-graph)
-                [[:a :b :c]
-                 [:a :b :d]])
-        ]
-    (-p-o-matches g {:s :a :spec [:?b :?c]} :b)))
-  
 
 (defn -s-p-o-matches
   "Returns <match-results> for <g> <context> and <next-s>
@@ -270,13 +249,6 @@ Where
                                            :spec [p o]))
                            (keys (g next-s))))))))
 
-(defn test-s-p-o-matches []
-  (let [g (.add
-           (make-graph)
-           [[:a :b :c]
-            [:a :b :d]])
-        ]
-    (-s-p-o-matches g {:spec [:?a :?b :?c]} :a)))
 
 (defn -query-clause-matches
   "Returns <results> for <clause> posed against <g>
@@ -307,23 +279,6 @@ Where
   ([g clause]
    (-query-clause-matches g clause {})))
 
-(defn test-query-clause-matches []
-  (let [g (.add
-           (make-graph)
-           [[:a :b :c]
-            [:a :b :d]])
-        ]
-    (-query-clause-matches g [:?a :?b :?c])))
-
-
-(def test-query-1 {:find [:?liker :?likee]
-                   :where [[:?liker :likes :?likee]]})
-
-(def test-query-2 {:find [:?liker :?likee :?class]
-                   :where [[:?liker :likes :?likee]
-                           [:?likee :isa :?class]
-                           ]})
-                  
 
 (defn -collect-clause-match
   "Returns <clause-state> modified for <matches> to <g> in <query-state>
@@ -382,27 +337,6 @@ Note: this is typically used to populate the 'specified' graph in
     (vec (map (partial triplify-var binding)
               (filter query-var? (keys binding))))))
 
-(defn test-collect-clause-match []
-  (let [clause (-> test-query-1
-                         :where
-                         (nth 0))
-        clause-matches (-query-clause-matches test-graph clause)
-        match (nth clause-matches 0)
-        previous-bindings #{{:?liker :john
-                             :?likee :meat}
-                            }
-        ]
-    (-collect-clause-match test-graph
-                           {:bindings previous-bindings
-                            :specified (.add (make-graph)
-                                             (mapcat -triplify-binding
-                                                     previous-bindings))
-                            }
-                           {:shared-bound #{:?liker :?likee}
-                            :bindings #{}
-                            }
-                           match)))
-  
 (defn -collect-clause-matches
   "Returns <query-state> modified for matches to <clause> in <g>
   Where
@@ -451,23 +385,6 @@ Note: this is typically used to populate the 'specified' graph in
                                      (:bindings clause-state)))))))
     
 
-(defn test-collect-clause-matches-1 []
-  (let [clauses (-> test-query-1
-                         :where)
-        ]
-    (reduce (partial -collect-clause-matches test-graph)
-            {}
-            clauses)))
-
-
-(defn test-collect-clause-matches-2 []
-  (let [clauses (-> test-query-2
-                         :where)
-        ]
-    (reduce (partial -collect-clause-matches test-graph)
-            {}
-            clauses)))
-
 (defn query-graph
   "Returns #{<binding>...} for <graph-pattern> applied to <g>
   Where
@@ -483,11 +400,7 @@ Note: this is typically used to populate the 'specified' graph in
    ^clojure.lang.PersistentVector graph-pattern]
   
   (:bindings
-   (reduce (partial -collect-clause-matches test-graph)
+   (reduce (partial -collect-clause-matches g)
            {}
            graph-pattern)))
   
-(defn -main
-  "Returns the normal form of the test graph"
-  [& args]
-  (normal-form (test-graph)))

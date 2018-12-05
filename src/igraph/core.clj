@@ -5,53 +5,44 @@ other basic clojure data structures such as maps and sequences.
     igraph.core
   (:require [clojure.set :as set]
             )
-  (:gen-class))
+  #_(:gen-class))
 
 
 (defprotocol IGraph
   "An abstraction for graphs"
-  (normal-form [g] "Returns <map> s.t. #(keys %) -> #{::schema ::contents}
+  (normal-form [g] "Returns {<s> {<p> #{<o>...}...}...}
 Where 
-<schema> :=  (keys %) -> #{::indexed-as ...}
-<contents> := a map s.t. (keys %) -> {<subject> {<predicate> #{<object>...}...}...}
-<indexed-as> := [<functional-subject> <function-predicate> <functional-object>],
-  an exhaustive and non-repeating vector of <canonical-args>.
-  By default: [::subject ::predicate ::object]
-<function-subject> is one of <canonical-args>
-<functional-predicate> is one of <canonical-args>
-<function-object> is one of <canonical-args>
-<canonical-args> :=  #{::subject ::predicate ::object}
-<subject> is a hashable value (typically a keyword) indentifying some functional
-  subject
-<predicate> is a hashable value (typically a keyword) identifying some function
-  predicate
-<object> is an arbitrary clojure object.
+<s> is the subject of a triple := [<s> <p> <o>] in <g>
+<p> is predicate of same
+<o> is the object of same
 ")
 
   (add [g to-add]
     "Returns <g>, with <to-add> added to its contents
 Where
 <g> is a graph
-<to-add> is in some format interpretable as [[<subject> <predicate> <object>]...]
+<to-add> is in some format interpretable as a set of triples.
 "
     )
   (get-p-o [g s]
-    "Returns {<predicate> #{<object> ...}} associated with <s> in <g>
+    "Returns {<p> #{<o> ...}} associated with <s> in <g>
 Where
-<predicate> and <object> are in a triple [<s> <predicate> <object>] in <g>
+<g> is a graph
+<s> is subject 
+<p> and <o> are in triples := [<s> <p> <o>] in <g>
 "
     )
   (get-o [g s p]
-    "Returns {<object> ...} for <s> and <p> in <g>
+    "Returns {<o> ...} for <s> and <p> in <g>
 Where
 <g> is a graph
 <s> is subject of some triples in <g>
 <p> is predicate of some triples in <g>
-<object> appears in triple [<s> <p> <object>] in <g>
+<o> appears in triple [<s> <p> <o>] in <g>
 "
     )
   (ask [g s p o]
-    "Returns true iff [<s> <p> <o>] appears in <g>
+    "Returns truthy value iff [<s> <p> <o>] appears in <g>
 "
     )
   (query [g q]
@@ -68,10 +59,10 @@ Where
   (invoke [g] [g s] [g s p] [g s p o]
     "Applies <g> as a function to the rest of its arguments, representing 
    triples [<s> <p> <o>] in <g> respectively.
-(g) -> {<s> {<p> #{<o>...}...}...} (normal form)
+(g) -> {<s> {<p> #{<o>...}...}...} ;; AKA normal-form
 (g s) -> {<p> #{<o>...}, ...}
 (g s p) -> #{<o> ...}
-(g s p o) -> true iff [<s> <p> <o>] is in <g>
+(g s p o) -> <o> iff [<s> <p> <o>] is in <g>
 ")
   )
 
