@@ -20,12 +20,12 @@ Depedency declaration for leiningen:
 
 ### IGraph
 The `IGraph` protocol specifies the following functions:
-- `(normal-form g)`
-- `(add g to-add)`
-- `(get-p-o g s)`
-- `(get-o g s p)`
-- `(ask g s p o)`
-- `(query g q)`
+- `(normal-form g)` -> {<s> {<p> #{<o>...}...}...}
+- `(add g to-add)` -> new graph with <to-add> added
+- `(get-p-o g s)` -> {<p> #{<o>...} ...}
+- `(get-o g s p)` -> #{<o> ...}
+- `(ask g s p o)` -> #<o>
+- `(query g q)` -> [{<var> <value> ...} ...]
 
 Also `invoke` to support `IFn` as follows
 - `(g)` = `(normal-form g)`
@@ -47,7 +47,7 @@ To create:
 #object[igraph.graph.Graph 0x67e46c69 "igraph.graph.Graph@67e46c69"]
 ```
 
-One adds to it like this:
+One adds to it like this (returns a new immutable object):
 
 ```
 (add my-graph
@@ -62,6 +62,8 @@ One adds to it like this:
    [:mary :name {:value "Mary" :lang "en"}]
    [:john :name {:value "John" :lang "en"}]
   ])))
+->
+#object[igraph.graph.Graph 0x58b96f62 "igraph.graph.Graph@58b96f62"]
 ```
 
 Invoked without arguments gives you `normal form`:
@@ -91,7 +93,7 @@ Invoked with a subject gives you its predicate-object map:
  :name #{{:value "John", :lang "en"}}}
 ```
 
-Invoked with a subject and predicate gives you the set of objects for same:
+Invoked with a subject and predicate gives you the set of objects:
 ```
 (my-graph :john :likes)
 ->
