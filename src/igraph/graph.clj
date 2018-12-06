@@ -100,7 +100,7 @@ With variables of the form :?x.
   [spec]
   (not (nil? (re-matches #"^\?.*" (name spec)))))
 
-(defn -matches-spec?
+(defn- -matches-spec?
   "
   Returns true if <target> matches <spec> in <query context>
   Where
@@ -122,7 +122,7 @@ With variables of the form :?x.
       ;; else not a query var 
       (= spec target))))
 
-(defn -annotate-match
+(defn- -annotate-match
   "Returns <match> modified per <spec> and <value> only if (query-var? <spec>)
   Where
   <match> := (keys %) -> #{:matched? <var> ...}, typically acquired matching
@@ -140,7 +140,7 @@ With variables of the form :?x.
     ;; else not matched
     match))
 
-(defn -o-match 
+(defn- -o-match 
   "
   Returns <match-result> 
   Where
@@ -161,7 +161,7 @@ With variables of the form :?x.
      next-o
      {:matched? (-matches-spec? context o next-o)})))
                                 
-(defn -p-o-matches
+(defn- -p-o-matches
   "Returns <match-results> for <g> in <context> given <next-p>
   Where
   <match-results> := [<match-result> ...]
@@ -191,7 +191,7 @@ With variables of the form :?x.
                                         :spec [o]))
                         (g (:s context) next-p)))))))
 
-(defn -s-p-o-matches
+(defn- -s-p-o-matches
   "Returns <match-results> for <g> <context> and <next-s>
   Where
   <match-results> := [<match-result> ...]
@@ -223,7 +223,7 @@ With variables of the form :?x.
                            (keys (g next-s))))))))
 
 
-(defn -query-clause-matches
+(defn- -query-clause-matches
   "Returns <results> for <clause> posed against <g>
   Where
   <results> := [<result> ...]
@@ -253,7 +253,7 @@ With variables of the form :?x.
    (-query-clause-matches g clause {})))
 
 
-(defn -collect-clause-match
+(defn- -collect-clause-match
   "Returns <clause-state> modified for <matches> to <g> in <query-state>
   Where
   <clause-state> := (keys %) -> #{:bindings :shared-bound} appended by
@@ -296,7 +296,7 @@ With variables of the form :?x.
               #{match})))))
                                  
 
-(defn -triplify-binding [binding]
+(defn- -triplify-binding [binding]
   "Returns [[<var> <value> <binding>]...] for <binding>
 Where
 <binding> := {<var> <value> ...}
@@ -312,7 +312,7 @@ Note: this is typically used to populate the 'specified' graph in
     (vec (map (partial triplify-var binding)
               (filter query-var? (keys binding))))))
 
-(defn -collect-clause-matches
+(defn- -collect-clause-matches
   "Returns <query-state> modified for matches to <clause> in <g>
   Where
   <query-state> := (keys %) -> #{:matches :specified},
