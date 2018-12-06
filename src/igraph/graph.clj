@@ -145,7 +145,9 @@ With variables of the form :?x.
   Returns <match-result> 
   Where
   <match-result> := (keys %) -> #{:matched? &maybe <var>}
-  <next-o> := (keys %) -> #{:spec :s :p :o}
+  <g> is a graph>
+  <context> := (keys %) -> #{:spec :s :p :o}
+  <next-o> is a graph element to be matched against <o>
   <matched?> is true iff <o> matches <next-o> in <context>
   <spec> is either a variable or a graph element in a graph pattern
   <s> and <p> are graph elements
