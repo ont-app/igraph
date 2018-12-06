@@ -140,27 +140,6 @@ With variables of the form :?x.
     ;; else not matched
     match))
 
-#_(defn -test-var 
-  "Returns true if there is no test for <spec> in <context>, or if said test
-returns true for <x>
-Where
-  <context> := (keys %) -> {:var-tests ...}
-  <var-tests> := {<spec> <test>...}
-  <spec> is typically a variable in a graph pattern
-  <test> := (fn[x]...) -> true iff x is not known to be a bad match for <spec>
-  <x> is a graph element encountered while matching to a graph pattern
-"
-  [^clojure.lang.PersistentArrayMap context
-   spec
-   x]
-  (let [test (-> context
-                 :var-tests
-                 spec)
-        ]
-    (if test
-      (test x)
-      true)))
-
 (defn -o-match 
   "
   Returns <match-result> 
