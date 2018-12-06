@@ -17,7 +17,7 @@ Watch this space
 
 ## Examples
 
-See the test file for now.
+See the [test file](https://github.com/ont-app/igraph/blob/master/test/igraph/graph_test.clj) for now.
 
 ### Bugs
 
