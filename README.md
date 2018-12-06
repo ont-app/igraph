@@ -25,7 +25,7 @@ The `IGraph` protocol specifies the following functions:
 - `(get-p-o g s)` -> {p #{o...} ...}
 - `(get-o g s p)` -> #{o ...}
 - `(ask g s p o)` ->  o
-- `(query g q)` -> [{<var> <value> ...} ...]
+- `(query g q)` -> [{var value ...} ...]
 
 Also `invoke` to support `IFn` as follows
 - `(g)` = `(normal-form g)`
