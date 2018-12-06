@@ -20,12 +20,12 @@ Depedency declaration for leiningen:
 
 ### IGraph
 The `IGraph` protocol specifies the following functions:
-- `(normal-form g)` -> {<s> {<p> #{<o>...}...}...}
-- `(add g to-add)` -> new graph with <to-add> added
-- `(get-p-o g s)` -> {<p> #{<o>...} ...}
-- `(get-o g s p)` -> #{<o> ...}
-- `(ask g s p o)` -> #<o>
-- `(query g q)` -> [{<var> <value> ...} ...]
+- `(normal-form g)` -- {<s> {<p> #{<o>...}...}...}
+- `(add g to-add)` -- new graph with <to-add> added
+- `(get-p-o g s)` -- {<p> #{<o>...} ...}
+- `(get-o g s p)` -- #{<o> ...}
+- `(ask g s p o)` --  #<o>
+- `(query g q)` -- [{<var> <value> ...} ...]
 
 Also `invoke` to support `IFn` as follows
 - `(g)` = `(normal-form g)`
