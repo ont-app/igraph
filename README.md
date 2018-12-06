@@ -37,7 +37,7 @@ The [source file]([IGraph](https://github.com/ont-app/igraph/blob/master/src/igr
 
 ## Graph
 
-The Graph type is a very lightweight implementation supporting IGraph. The aim here aside from demonstrating IGraph is to add just one layer of expressiveness to `map`.
+The Graph type is a very lightweight implementation of IGraph. The aim here, aside from demonstrating IGraph, is to add just one layer of expressiveness to `map`.
 
 To create:
 
