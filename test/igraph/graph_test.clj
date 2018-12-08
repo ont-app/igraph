@@ -4,20 +4,20 @@
             [igraph.graph :refer :all]
             ))
 
-(defonce test-graph (let [g (make-graph)
-                      ]
-                  (add g
-                        [[:john :isa :person]
-                         [:mary :isa :person]
-                         [:likes :isa :property]
-                         [:isa :isa :property]
-                         [:john :likes :meat]
-                         [:mary :likes :coke]
-                         [:meat :isa :food]
-                         [:coke :isa :drink]
-                         [:mary :name {:value "Mary" :lang "en"}]
-                         [:john :name {:value "John" :lang "en"}]
-                         ])))
+(defonce test-graph (add (make-graph)
+                         [[:john :isa :person]
+                          [:john :likes :meat]
+                          [:john :name {:value "John" :lang "en"}]
+                          [:mary
+                           :isa :person
+                           :likes :coke
+                           :name {:value "Mary" :lang "en"}
+                           ]
+                          [:likes :isa :property]
+                          [:isa :isa :property]
+                          [:meat :isa :food]
+                          [:coke :isa :drink]
+                          ]))
 
 
 (deftest invoke-test

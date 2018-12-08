@@ -12,7 +12,7 @@ With variables of the form :?x.
 
 
 (defn add-to-graph-dispatcher [g to-add]
-  "Returns one of #{:triple :vector-of-triples <type>} for <args>
+  "Returns one of #{:triple :vector-of-vectors <type>} for <args>
   Where
   <args> := [<g> <to-add>],  arguments to a method add-to-graph
   <g> is a graph
@@ -24,7 +24,7 @@ With variables of the form :?x.
 
   (if (= (type to-add) clojure.lang.PersistentVector)
     (if (= (type (to-add 0)) clojure.lang.PersistentVector)
-      :vector-of-triples
+      :vector-of-vectors
       :triple)
     ;; else not a vector
     (type to-add)))
@@ -71,18 +71,24 @@ With variables of the form :?x.
            contents {}}}]
    (Graph. schema contents)))
 
-(defmethod add-to-graph :vector-of-triples [g triples]
-  (let [collect-triple (fn [acc triple]
-                         (assert (= (count triple) 3))
-                         (let [[s p o] triple
-                               ]
-                           (update-in acc
-                                      [s p]
-                                      #(conj (set %) o))))
+(defmethod add-to-graph :vector-of-vectors [g triples]
+  "
+Where <triples> := [<v> ....]
+<v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] 
+"
+  (let [collect-triple (fn [s acc [p o]]
+                         (update-in acc
+                                    [s p]
+                                    #(conj (set %) o)))                       
+        collect-vector (fn [acc v]
+                         (assert (odd? (count v)))
+                         (reduce (partial collect-triple (first v))
+                                 acc
+                                 (partition 2 (rest v))))
         ]
     (make-graph
      :schema (.schema g)
-     :contents (reduce collect-triple (.contents g) triples))))
+     :contents (reduce collect-vector (.contents g) triples))))
 
 (defmethod add-to-graph :triple [g triple]
   (add-to-graph g [triple]))
