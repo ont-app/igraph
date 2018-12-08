@@ -22,6 +22,7 @@ Depedency declaration for leiningen:
 The `IGraph` protocol specifies the following functions:
 - `(normal-form g)` -> {s {p #{o...}...}...}
 - `(add g to-add)` -> new graph with <to-add> added
+- `(subjects g)` -> (s ...), a seq of subjects
 - `(get-p-o g s)` -> {p #{o...} ...}
 - `(get-o g s p)` -> #{o ...}
 - `(ask g s p o)` ->  o
@@ -66,6 +67,14 @@ One adds to it like this (returns a new immutable object):
 #object[igraph.graph.Graph 0x58b96f62 "igraph.graph.Graph@58b96f62"]
 ```
 
+The `subjects` function will give you the subjects:
+```
+(subjects my-graph)
+-> 
+(:john :mary :likes :isa :meat :coke)
+```
+
+
 Invoked without arguments gives you `normal form`:
 
 ```
@@ -100,9 +109,22 @@ Invoked with a subject and predicate gives you the set of objects:
 #{:meat}
 ```
 
-Invoked with subject predicate and object gives you the object (if its there):
+If you're sure there's only going to be one object you can use the `unique` function:
 ```
-(g :john :likes :meat)
+(unique (my-graph :john :likes))
+->
+:meat
+
+(unique #{:just-me :no-theres-me-too!})
+-> 
+Exception Non-unique: #{:no-theres-me-too! :just-me}
+
+```
+
+
+Invoked with subject, predicate and object gives you the object (if its there):
+```
+(my-graph :john :likes :meat)
 ->
 :meat
 ```

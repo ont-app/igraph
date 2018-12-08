@@ -58,3 +58,14 @@
               :?liker :john}}
            ))))
 
+(deftest utility-test
+  (testing "Test the `unique` function"
+    (is (= (unique #{:just-me})
+           :just-me))
+    (is (= (unique #{})
+           nil))
+    (is (thrown? Exception (unique #{:just-me :no-theres-me-too!})))
+
+    (is (= (unique [:just-me :no-theres-me-too!] first)
+           :just-me)
+    )))

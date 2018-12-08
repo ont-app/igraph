@@ -10,6 +10,7 @@ With variables of the form :?x.
             )
   #_(:gen-class))
 
+
 (defn add-to-graph-dispatcher [g to-add]
   "Returns one of #{:triple :vector-of-triples <type>} for <args>
   Where
@@ -40,8 +41,10 @@ With variables of the form :?x.
 (declare query-graph) ;; defined below
 
 (deftype Graph [schema contents]
+
   IGraph
-  (normal-form [g](.contents g))
+  (normal-form [g] (.contents g))
+  (subjects [g] (keys (.contents g)))
   (add [g to-add] (add-to-graph g to-add))
   (get-p-o [g s] (get (.contents g) s))
   (get-o [g s p] (get-in (.contents g) [s p]))
@@ -53,6 +56,7 @@ With variables of the form :?x.
   (invoke [g s] (get-p-o g s))
   (invoke [g s p] (get-o g s p))
   (invoke [g s p o] (ask g s p o)))
+
 
 
 (defn make-graph
@@ -104,10 +108,10 @@ With variables of the form :?x.
   "
   Returns true if <target> matches <spec> in <query context>
   Where
+  <target> is an element in some Graph being match-tested in some query.
+  <spec> := is an element in some query clause
   <query-context> := (keys %) -> #{maybe :var-tests ...} , typically
     the 'context' argument in an -X-matches function.
-  <spec> := is an element in some query clause
-  <target> is an element in some Graph being matched in some query.
   "
   {:test (fn [] (= (-matches-spec? {:var-tests {:?x (fn [x] false)}} :?x "blah")
                    false))
@@ -117,8 +121,8 @@ With variables of the form :?x.
         ]
     (if (query-var? spec)
       (or (not var-tests)
-          (or (not (spec var-tests)) ;; no test for <spec>
-              ((spec var-tests) target)))
+          (or (not (spec var-tests)) ;; no test, so match var
+              ((spec var-tests) target))) 
       ;; else not a query var 
       (= spec target))))
 
@@ -142,16 +146,17 @@ With variables of the form :?x.
 
 (defn- -o-match 
   "
-  Returns <match-result> 
+  Returns <match-result> to <next-o> in <context> querying <g>
   Where
   <match-result> := (keys %) -> #{:matched? &maybe <var>}
   <g> is a graph>
   <context> := (keys %) -> #{:spec :s :p :o}
   <next-o> is a graph element to be matched against <o>
+  <o> is a graph pattern element in <spec>
   <matched?> is true iff <o> matches <next-o> in <context>
-  <spec> is either a variable or a graph element in a graph pattern
-  <s> and <p> are graph elements
-  <var> is <spec>, iff (var? spec)
+  <spec> :- [<o>] the last pattern element in a query clause
+  <s> and <p> are graph elements mathed to the first two pattern elements
+  <var> is <spec>, iff (query-var? spec)
   "
   [g context next-o]
   (let [[o] (:spec context)
@@ -254,7 +259,7 @@ With variables of the form :?x.
 
 
 (defn- -collect-clause-match
-  "Returns <clause-state> modified for <matches> to <g> in <query-state>
+  "Returns <clause-state> modified for <match> to <g> in <query-state>
   Where
   <clause-state> := (keys %) -> #{:bindings :shared-bound} appended by
     <match> applied to appropriate candidates in (:bindings <query-state>)
@@ -284,7 +289,7 @@ With variables of the form :?x.
                       (reduce set/intersection
                               (map (fn [qvar]
                                      (-> query-state
-                                         :specified
+                                         :specified ;; TODO consider change :specified to :history or :established-bindings
                                          (.get-o qvar (qvar match))))
                                    (:shared-bound clause-state)))))
                                               
@@ -377,4 +382,24 @@ Note: this is typically used to populate the 'specified' graph in
    (reduce (partial -collect-clause-matches g)
            {}
            graph-pattern)))
-  
+
+;;;;;;;;;;;;;;;;;;;;
+;; Utility functions
+;;;;;;;;;;;;;;;;;;;;
+
+(defn unique
+  "Returns the single member of <coll>, or nil if <coll> is empty. Calls <if-plural> if there is more than one member (default is to throw an Exception).
+  Where
+  <coll> is a collection
+  <if-plural> := (fn [coll] ...) -> <value>, default raises an error.
+  Note: this can be used when you've called (G s p) and you're sure there is
+    only one object.
+  "
+  ([coll on-plural]
+   (if (not (empty? coll))
+     (if (> (count coll) 1)
+       (on-plural coll)
+       (first coll))))
+  ([coll]
+   (unique coll (fn [coll] (throw (Exception. (str "Non-unique: " coll)))))))
+       

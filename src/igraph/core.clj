@@ -15,7 +15,13 @@ Where
 <p> is predicate of same
 <o> is the object of same
 ")
-
+  (subjects [g]
+    "Returns (<s>...) for <g>
+Where 
+<s> is a subject in one or more triples in <g>
+<g> is a graph.
+"
+    )
   (add [g to-add]
     "Returns <g>, with <to-add> added to its contents
 Where
@@ -51,7 +57,7 @@ Where
 <query> is a query in a format suitable for querying <g>
 <binding> := {<var> <value>, ...}
 <var> is a variable specified in <q>
-<value> is a value found in <g> bounder to <var> per <q>
+<value> is a value found in <g> bounded to <var> per <q>
 "
     )
   ;; for IFn
