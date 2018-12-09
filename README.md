@@ -12,9 +12,7 @@ This is deployed to [clojars](https://clojars.org/ont-app/igraph).
 
 Depedency declaration for leiningen:
 
-```
-[ont-app/igraph "0.1.0-SNAPSHOT"]
-```
+[![Clojars Project](https://img.shields.io/clojars/v/ont-app/igraph.svg)](https://clojars.org/ont-app/igraph)
 
 ## Usage
 
