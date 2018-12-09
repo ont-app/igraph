@@ -53,15 +53,17 @@ One adds to it like this (returns a new immutable object):
 ```
 (add my-graph
   [[:john :isa :person]
-   [:mary :isa :person]
+   [:john :likes :meat]
+   [:john :name {:value "John" :lang "en"}]
+   [:mary
+    :isa :person
+    :likes :coke
+    :name {:value "Mary" :lang "en"}
+    ]
    [:likes :isa :property]
    [:isa :isa :property]
-   [:john :likes :meat]
-   [:mary :likes :coke]
    [:meat :isa :food]
    [:coke :isa :drink]
-   [:mary :name {:value "Mary" :lang "en"}]
-   [:john :name {:value "John" :lang "en"}]
   ])))
 ->
 #object[igraph.graph.Graph 0x58b96f62 "igraph.graph.Graph@58b96f62"]
