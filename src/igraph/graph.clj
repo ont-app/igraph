@@ -11,23 +11,22 @@ With variables of the form :?x.
   #_(:gen-class))
 
 
-(defn add-to-graph-dispatcher [g to-add]
-  "Returns one of #{:triple :vector-of-vectors <type>} for <args>
+(defn alter-graph-dispatcher [g to-add-or-remove]
+  "Returns one of #{:vector :vector-of-vectors <type>} for <args>
   Where
-  <args> := [<g> <to-add>],  arguments to a method add-to-graph
+  <args> := [<g> <to-alter>],  arguments to a method add or remove from graph
   <g> is a graph
-  <to-add> is a specification of triples to add to <g>
-  <triple> indicates <to-add> := [<s> <p> <o>]
-  <vector-of-triples> indicates <to-add> := [<triple>...]
+  <to-alter> is a specification of triples to add to or remove from  <g>
+  <triple> indicates <to-alter> := [<s> <p> <o>]
+  <vector-of-vectors> indicates <to-alter> := [<triple>...]
   <type> = (type <to-add>)
   "
-
-  (if (= (type to-add) clojure.lang.PersistentVector)
-    (if (= (type (to-add 0)) clojure.lang.PersistentVector)
+  (if (= (type to-add-or-remove) clojure.lang.PersistentVector)
+    (if (= (type (to-add-or-remove 0)) clojure.lang.PersistentVector)
       :vector-of-vectors
-      :triple)
+      :vector)
     ;; else not a vector
-    (type to-add)))
+    (type to-add-or-remove)))
 
 (defmulti add-to-graph
   "Returns <g>, with <to-add> added
@@ -35,7 +34,15 @@ With variables of the form :?x.
   <g> is a Graph
   <to-add> is interpetable as a set of triples
   "
-  add-to-graph-dispatcher)
+  alter-graph-dispatcher)
+
+(defmulti remove-from-graph
+  "Returns <g>, with <to-add> added
+  Where
+  <g> is a Graph
+  <to-add> is interpetable as a set of triples
+  "  
+  alter-graph-dispatcher)
 
 
 (declare query-graph) ;; defined below
@@ -45,11 +52,13 @@ With variables of the form :?x.
   IGraph
   (normal-form [g] (.contents g))
   (subjects [g] (keys (.contents g)))
-  (add [g to-add] (add-to-graph g to-add))
   (get-p-o [g s] (get (.contents g) s))
   (get-o [g s p] (get-in (.contents g) [s p]))
   (ask [g s p o] (get-in (.contents g) [s p o]))
   (query [g q] (query-graph g q))
+  (read-only? [g] false)
+  (add [g to-add] (add-to-graph g to-add))
+  (subtract [g to-subtract] (remove-from-graph g to-subtract))
   
   clojure.lang.IFn
   (invoke [g] (normal-form g))
@@ -90,14 +99,79 @@ Where <triples> := [<v> ....]
      :schema (.schema g)
      :contents (reduce collect-vector (.contents g) triples))))
 
-(defmethod add-to-graph :triple [g triple]
+(defmethod add-to-graph :vector [g triple]
+  (assert (= (count triple) 3))
   (add-to-graph g [triple]))
 
 (defmethod add-to-graph clojure.lang.LazySeq [g the-seq]
   (add-to-graph g (vec the-seq)))
 
-(defmethod add-to-graph :default [g to-add]
-  (throw (Exception. (str "No add-to-graph defined for " (type to-add)))))
+
+(defn- -dissoc-in [map-or-set path]
+  "removes the last key in <path> from its parent in <map-or-set>, removing
+    any empty containers along the way.
+Where 
+<map-or-set> is typically a sub-tree of graph contents
+<path> := [<key> ...]
+Note: typically used to inform removal of nodes in a graph, where <key> is 
+  a subject, predicate or object
+"
+  (let [key (first path)
+        ]
+    (assert (not (empty? path)))
+    (if (= (count path) 1)
+      (if (set? map-or-set)
+        (disj map-or-set key)
+        ;; else it's a map
+        (dissoc map-or-set key))
+      ;; else there's more path
+      (let [dissociated (-dissoc-in (get map-or-set key)
+                                    (rest path))
+            ]
+        (if (empty? dissociated)
+          (dissoc  map-or-set key)
+          (assoc map-or-set key
+                 dissociated))))))
+
+(defmethod remove-from-graph :vector-of-vectors [g triples]
+  "
+Where <triples> := [<v> ....]
+<v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] , or [<s>] or [<s> <p>]
+<s> is a subject in <g>
+<p> is a predicate for <s> in <g>
+<o> is an object for <s> and <p> in <g>
+Note: 
+<v> = [<s>] signals that all {<p> <o>} s.t. (<g> <s>) should be removed.
+<v> = [<s> <p>] signals that all <o> s.t. (<g> <s> <p>) should be removed
+"
+  (let [remove-triple (fn [s acc [p o]]
+                        (-dissoc-in acc [s p o]))
+        collect-vector (fn [acc v]
+                         (if (< (count v) 3) ;; specifies s or s-p
+                           (-dissoc-in acc v)
+                         ;; else this specifies one or more triples...
+                         (let []
+                           (assert (odd? (count v)))
+                           (reduce (partial remove-triple (first v))
+                                   acc
+                                   (partition 2 (rest v))))))
+        ]
+    (make-graph
+     :schema (.schema g)
+     :contents (reduce collect-vector (.contents g) triples))))
+
+(defmethod remove-from-graph :vector [g to-remove]
+  "Where
+<to-remove> may be [s] [s p] [s p o]
+"
+  (assert (<= (count to-remove) 3))
+  (let [contents (-dissoc-in (.contents g) to-remove)
+        ]
+    (make-graph
+     :schema (.schema g)
+     :contents (-dissoc-in (.contents g)
+                           to-remove))))
+
  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Support for simple queries

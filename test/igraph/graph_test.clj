@@ -43,7 +43,50 @@
            #{:meat}))
     (is (= (test-graph :john :likes :meat) ;; returns (ask g s p o)
            :meat))
-  ))
+    ))
+
+(deftest subtract-test
+  (testing "Variations on subtract"
+    (is (= (normal-form (subtract test-graph [:john]))
+           {:mary
+            {:isa #{:person},
+             :likes #{:coke},
+             :name #{{:value "Mary", :lang "en"}}},
+            :likes {:isa #{:property}},
+            :isa {:isa #{:property}},
+            :meat {:isa #{:food}},
+            :coke {:isa #{:drink}}}))
+    (is (= (normal-form (subtract test-graph [:john :likes]))
+           {:john {:isa #{:person}, :name #{{:value "John", :lang "en"}}},
+            :mary
+            {:isa #{:person},
+             :likes #{:coke},
+             :name #{{:value "Mary", :lang "en"}}},
+            :likes {:isa #{:property}},
+            :isa {:isa #{:property}},
+            :meat {:isa #{:food}},
+            :coke {:isa #{:drink}}}))
+    (is (= (normal-form (subtract test-graph [:john :likes :meat]))
+           {:john {:isa #{:person}, :name #{{:value "John", :lang "en"}}},
+            :mary
+            {:isa #{:person},
+             :likes #{:coke},
+             :name #{{:value "Mary", :lang "en"}}},
+            :likes {:isa #{:property}},
+            :isa {:isa #{:property}},
+            :meat {:isa #{:food}},
+            :coke {:isa #{:drink}}}))
+    (is (= (normal-form (subtract test-graph [[:john
+                                               :likes :meat
+                                               :isa :person]
+                                              [:mary :name]]))
+           {:john {:name #{{:value "John", :lang "en"}}},
+            :mary {:isa #{:person}, :likes #{:coke}},
+            :likes {:isa #{:property}},
+            :isa {:isa #{:property}},
+            :meat {:isa #{:food}},
+            :coke {:isa #{:drink}}}))
+    ))
 
 (deftest query-test
   (testing "Tests a basic query against the dummy test-graph"

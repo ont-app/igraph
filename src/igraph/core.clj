@@ -9,6 +9,11 @@ other basic clojure data structures such as maps and sequences.
 
 (defprotocol IGraph
   "An abstraction for S-P-O graphs"
+
+  ;;;;;;;;;;;;;;;;;;;;
+  ;; ACCESS FUNCTIONS
+  ;;;;;;;;;;;;;;;;;;;;
+  
   (normal-form [g] "Returns {<s> {<p> #{<o>...}...}...}
 Where 
 <s> is the subject of a triple := [<s> <p> <o>] in <g>
@@ -22,15 +27,8 @@ Where
 <g> is a graph.
 "
     )
-  (add [g to-add]
-    "Returns <g>, with <to-add> added to its contents
-Where
-<g> is a graph
-<to-add> is in some format interpretable as a set of triples.
-"
-    )
   (get-p-o [g s]
-    "Returns {<p> #{<o> ...}} associated with <s> in <g>
+    "Returns {<p> #{<o> ...}} associated with <s> in <g>, or nil.
 Where
 <g> is a graph
 <s> is subject 
@@ -38,7 +36,7 @@ Where
 "
     )
   (get-o [g s p]
-    "Returns {<o> ...} for <s> and <p> in <g>
+    "Returns {<o> ...} for <s> and <p> in <g>, or nil.
 Where
 <g> is a graph
 <s> is subject of some triples in <g>
@@ -48,6 +46,11 @@ Where
     )
   (ask [g s p o]
     "Returns truthy value iff [<s> <p> <o>] appears in <g>
+Where
+<g> is a graph
+<s> is subject of some triples in <g>
+<p> is predicate of some triples in <g>
+<o> appears in triple [<s> <p> <o>] in <g>
 "
     )
   (query [g q]
@@ -64,10 +67,37 @@ Where
   (invoke [g] [g s] [g s p] [g s p o]
     "Applies <g> as a function to the rest of its arguments, representing 
    triples [<s> <p> <o>] in <g> respectively.
-(g) -> {<s> {<p> #{<o>...}...}...} ;; AKA normal-form
-(g s) -> {<p> #{<o>...}, ...}
-(g s p) -> #{<o> ...}
-(g s p o) -> <o> iff [<s> <p> <o>] is in <g>
+(g) -> {<s> {<p> #{<o>...}...}...} ;; = (normal-form <g>)
+(g s) -> {<p> #{<o>...}, ...} ;; = (get-p-o <g>)
+(g s p) -> #{<o> ...} ;; = (get-o <g>)
+(g s p o) -> <o> iff [<s> <p> <o>] is in <g> ;; = (ask <g> <s> <p> <o>)
 ")
+  
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; CONTENT MANIPULATION FUNCTIONS
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+  (read-only? [g]
+    "Returns true if the membership of <g> is static 
+and add/subtract functions will throw an exception. This 
+may hold for example when <g> is a public endpoint for which write 
+permission is denied"
+    )
+  (add [g to-add]
+    "Returns <g>, with <to-add> added to its contents.
+Throws an exception if (read-only? <g>)
+Where
+<g> is a graph
+<to-add> is in some format interpretable as a set of triples.
+"
+    )
+  (subtract [g to-subtract]
+    "Returns <g> with <to-subtract> removed from its contents.
+Throws an exception if (read-only? <g>)
+Where
+<g> is a graph
+<to-subtract> is in some format interpretable as a set of triples.
+"
+    )
   )
 

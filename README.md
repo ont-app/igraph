@@ -20,13 +20,17 @@ Depedency declaration for leiningen:
 
 ### IGraph
 The `IGraph` protocol specifies the following functions:
+#### member access
 - `(normal-form g)` -> {s {p #{o...}...}...}
-- `(add g to-add)` -> new graph with <to-add> added
 - `(subjects g)` -> (s ...), a seq of subjects
 - `(get-p-o g s)` -> {p #{o...} ...}
 - `(get-o g s p)` -> #{o ...}
 - `(ask g s p o)` ->  o
 - `(query g q)` -> [{var value ...} ...]
+#### membership changes
+- `(read-only? g) -> true if changing membership throws an exception
+- `(add g to-add)` -> new graph with <to-add> added
+- `(subtract g to-subtract)` -> new graph with <to-subtract> absent.
 
 Also `invoke` to support `IFn` as follows
 - `(g)` = `(normal-form g)`
@@ -68,6 +72,44 @@ One adds to it like this (returns a new immutable object):
 ->
 #object[igraph.graph.Graph 0x58b96f62 "igraph.graph.Graph@58b96f62"]
 ```
+
+One subracts from it like this:
+
+```
+(normal-form 
+  (subtract 
+    (add (make-graph) 
+         [[:a :b :c :d :e] [:g :h :i]])
+    [:a]))
+;; -> 
+;; {:g {:h #{:i}}}
+
+(normal-form 
+  (subtract 
+    (add (make-graph) 
+         [[:a :b :c :d :e] [:g :h :i]])
+    [:a :b]))
+;; ->
+;; {:a {:d #{:e}}, :g {:h #{:i}}}
+
+(normal-form 
+  (subtract 
+    (add (make-graph) 
+         [[:a :b :c :d :e] [:g :h :i]])
+    [:a :b :c]))
+;; ->
+;; {:a {:d #{:e}}, :g {:h #{:i}}}
+
+(normal-form 
+  (subtract 
+    (add (make-graph) 
+         [[:a :b :c :d :e] [:g :h :i]])
+    [[:a :b][:g :h :i]]))
+;; ->
+;; {:a {:d #{:e}}}
+
+```
+
 
 The `subjects` function will give you the subjects:
 ```
