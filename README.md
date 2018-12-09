@@ -28,9 +28,9 @@ The `IGraph` protocol specifies the following functions:
 - `(ask g s p o)` ->  o
 - `(query g q)` -> [{var value ...} ...]
 #### membership changes
-- `(read-only? g) -> true if changing membership throws an exception
-- `(add g to-add)` -> new graph with <to-add> added
-- `(subtract g to-subtract)` -> new graph with <to-subtract> absent.
+- `(read-only? g)` -> true if changing membership throws an exception
+- `(add g to-add)` -> new graph with <i>to-add></i> added
+- `(subtract g to-subtract)` -> new graph with <i>to-subtract</i> absent.
 
 Also `invoke` to support `IFn` as follows
 - `(g)` = `(normal-form g)`
@@ -42,7 +42,7 @@ The [source file]([IGraph](https://github.com/ont-app/igraph/blob/master/src/igr
 
 ## Graph
 
-The Graph type is a very lightweight implementation of IGraph. The aim here, aside from demonstrating IGraph, is to add just one layer of expressiveness to `map`.
+The Graph type is a very lightweight implementation of IGraph. The aim here, aside from demonstrating IGraph, is to add just one layer of expressiveness over the  `map` construct.
 
 To create:
 
@@ -72,44 +72,6 @@ One adds to it like this (returns a new immutable object):
 ->
 #object[igraph.graph.Graph 0x58b96f62 "igraph.graph.Graph@58b96f62"]
 ```
-
-One subracts from it like this:
-
-```
-(normal-form 
-  (subtract 
-    (add (make-graph) 
-         [[:a :b :c :d :e] [:g :h :i]])
-    [:a]))
-;; -> 
-;; {:g {:h #{:i}}}
-
-(normal-form 
-  (subtract 
-    (add (make-graph) 
-         [[:a :b :c :d :e] [:g :h :i]])
-    [:a :b]))
-;; ->
-;; {:a {:d #{:e}}, :g {:h #{:i}}}
-
-(normal-form 
-  (subtract 
-    (add (make-graph) 
-         [[:a :b :c :d :e] [:g :h :i]])
-    [:a :b :c]))
-;; ->
-;; {:a {:d #{:e}}, :g {:h #{:i}}}
-
-(normal-form 
-  (subtract 
-    (add (make-graph) 
-         [[:a :b :c :d :e] [:g :h :i]])
-    [[:a :b][:g :h :i]]))
-;; ->
-;; {:a {:d #{:e}}}
-
-```
-
 
 The `subjects` function will give you the subjects:
 ```
@@ -165,7 +127,6 @@ Exception Non-unique: #{:no-theres-me-too! :just-me}
 
 ```
 
-
 Invoked with subject, predicate and object gives you the object (if its there):
 ```
 (my-graph :john :likes :meat)
@@ -182,6 +143,44 @@ Querying is done with a very simple graph pattern using keywords starting with ?
 #{{:?type :drink, :?likee :coke, :?liker :mary}
   {:?type :food, :?likee :meat, :?liker :john}}
 ```
+
+One subtracts from it like this (also returns new immutable object):
+
+```
+(normal-form 
+  (subtract 
+    (add (make-graph) 
+         [[:a :b :c :d :e] [:g :h :i]])
+    [:a]))
+;; -> 
+;; {:g {:h #{:i}}}
+
+(normal-form 
+  (subtract 
+    (add (make-graph) 
+         [[:a :b :c :d :e] [:g :h :i]])
+    [:a :b]))
+;; ->
+;; {:a {:d #{:e}}, :g {:h #{:i}}}
+
+(normal-form 
+  (subtract 
+    (add (make-graph) 
+         [[:a :b :c :d :e] [:g :h :i]])
+    [:a :b :c]))
+;; ->
+;; {:a {:d #{:e}}, :g {:h #{:i}}}
+
+(normal-form 
+  (subtract 
+    (add (make-graph) 
+         [[:a :b :c :d :e] [:g :h :i]])
+    [[:a :b][:g :h :i]]))
+;; ->
+;; {:a {:d #{:e}}}
+
+```
+
 
 
 See also the  [test file](https://github.com/ont-app/igraph/blob/master/test/igraph/graph_test.clj).
