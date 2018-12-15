@@ -26,7 +26,10 @@ With variables of the form :?x.
       :vector-of-vectors
       :vector)
     ;; else not a vector
-    (type to-add-or-remove)))
+    (if (normal-form? to-add-or-remove)
+      :normal-form
+      ;; else neither a vector nor normal form
+      (type to-add-or-remove))))
 
 (defmulti add-to-graph
   "Returns <g>, with <to-add> added
@@ -46,6 +49,7 @@ With variables of the form :?x.
 
 
 (declare query-graph) ;; defined below
+(declare get-intersection)
 
 (deftype Graph [schema contents]
 
@@ -64,7 +68,13 @@ With variables of the form :?x.
   (invoke [g] (normal-form g))
   (invoke [g s] (get-p-o g s))
   (invoke [g s p] (get-o g s p))
-  (invoke [g s p o] (ask g s p o)))
+  (invoke [g s p o] (ask g s p o))
+  
+  ISet
+  (union [g1 g2] (add-to-graph g1 (g2)))
+  (intersection [g1 g2] (get-intersection g1 g2))
+  (difference [g1 g2] (remove-from-graph g1 (g2)))
+  )
 
 
 
@@ -79,6 +89,28 @@ With variables of the form :?x.
       :or {schema [::subject ::predicate ::object] ;; TODO make this relevant
            contents {}}}]
    (Graph. schema contents)))
+
+(defmethod add-to-graph :normal-form [g to-add]
+  {:pre (normal-form? to-add)
+   }
+  (letfn [(collect-key [m acc k]
+            (assoc acc k
+                   (if (contains? acc k)
+                     (merge-tree(acc k)
+                                (m k))
+                     (m k))))
+          (integrate [acc m]
+            (reduce (partial collect-key m) acc (keys m)))
+          (merge-tree [m1 m2]
+            (if (set? m1)
+              (set/union m1 m2)
+              (-> {}
+                  (integrate m1)
+                  (integrate m2))))
+        ]
+  (make-graph
+   :schema (.schema g)
+   :contents (merge-tree (g) to-add))))
 
 (defmethod add-to-graph :vector-of-vectors [g triples]
   "
@@ -133,6 +165,42 @@ Note: typically used to inform removal of nodes in a graph, where <key> is
           (assoc map-or-set key
                  dissociated))))))
 
+
+(defn shared-keys [m1 m2]
+  "Returns #{<shared key>...} for <m1> and <m2>
+Where
+<shared key> is a key in both maps <m1> and <m2>
+"
+  (set/intersection (set (keys m1))
+                    (set (keys m2))))
+
+(defmethod remove-from-graph :normal-form [g to-remove]
+  {:pre (normal-form? to-remove)
+   }
+  (letfn [(dissoc-in [shared-path acc value]
+            (let [shared-path (conj shared-path value)
+                  ]
+              (-dissoc-in acc shared-path)))
+          
+          (dissoc-shared-keys [shared-path acc next-key]
+            (let [shared-path (conj shared-path next-key)
+                  v1 (get-in (g) shared-path)
+                  v2 (get-in to-remove shared-path)
+                  ]
+              (if (set? v1)
+                (reduce (partial dissoc-in shared-path)
+                        acc
+                        (set/intersection v1 v2))
+                (reduce (partial dissoc-shared-keys shared-path)
+                        acc
+                        (shared-keys v1 v2)))))
+          ]
+    (make-graph
+     :schema (.schema g)
+     :contents (reduce (partial dissoc-shared-keys [])
+                       (g)
+                       (shared-keys (g) to-remove)))))
+
 (defmethod remove-from-graph :vector-of-vectors [g triples]
   "
 Where <triples> := [<v> ....]
@@ -172,7 +240,26 @@ Note:
      :contents (-dissoc-in (.contents g)
                            to-remove))))
 
- 
+
+
+(defn get-intersection [g1 g2]
+  (let [collect-p
+        (fn [s acc p]
+          (assoc-in acc
+                    [s p]
+                    (set/intersection
+                     (set (get-in (g1) [s p]))
+                     (set (get-in (g2) [s p])))))
+        collect-s
+        (fn [acc s]
+          (reduce (partial collect-p s)
+                  acc
+                  (shared-keys (g1 s) (g2 s))))
+        ]
+    (make-graph
+     :schema (.schema g1)
+     :contents (reduce collect-s {} (shared-keys (g1) (g2))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Support for simple queries
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

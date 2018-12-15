@@ -112,3 +112,26 @@
     (is (= (unique [:just-me :no-theres-me-too!] first)
            :just-me)
     )))
+
+(deftest iset-test
+  (testing "Test the ISet functions"
+    (let [g1 (add (make-graph) [[:a :b :c :d :e]
+                                [:f :g :h :i :j]
+                                ])
+          g2 (add (make-graph) [[:a :b :c]
+                                [:x :y :z]])
+          ]
+                               
+    (is (= (normal-form (union g1 g2))
+           (normal-form (add (make-graph) [[:a :b :c :d :e]
+                                           [:f :g :h :i :j]
+                                           [:x :y :z]
+                                           ]))))
+    (is (= (normal-form (intersection g1 g2))
+           (normal-form (add (make-graph)
+                             [[:a :b :c]]))))
+    (is (= (normal-form (difference g1 g2))
+           (normal-form (add (make-graph)
+                             [[:a :d :e]
+                              [:f :g :h :i :j]]))))
+    )))

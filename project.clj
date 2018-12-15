@@ -1,4 +1,4 @@
-(defproject ont-app/igraph "0.1.1"
+(defproject ont-app/igraph "0.1.2"
   :description "Defines a IGraph protocol for maintaining a querying different graph implementations"
   :url "https://github.com/ont-app/igraph"
   :license {:name "Eclipse Public License"

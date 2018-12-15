@@ -8,9 +8,7 @@ There is also a type Graph defined which implements IGraph.
 
 ## Installation
 
-This is deployed to [clojars](https://clojars.org/ont-app/igraph).
-
-Depedency declaration for leiningen:
+This is deployed to [clojars](https://clojars.org/ont-app/igraph):
 
 [![Clojars Project](https://img.shields.io/clojars/v/ont-app/igraph.svg)](https://clojars.org/ont-app/igraph)
 
@@ -20,15 +18,15 @@ Depedency declaration for leiningen:
 The `IGraph` protocol specifies the following functions:
 #### member access
 - `(normal-form g)` -> {s {p #{o...}...}...}
-- `(subjects g)` -> (s ...), a seq of subjects
+- `(subjects g)` -> (s ...), a collection of subjects
 - `(get-p-o g s)` -> {p #{o...} ...}
 - `(get-o g s p)` -> #{o ...}
-- `(ask g s p o)` ->  o
-- `(query g q)` -> [{var value ...} ...]
+- `(ask g s p o)` ->  truthy 
+- `(query g q)` -> collection of {var value ...} maps
 #### membership changes
 - `(read-only? g)` -> true if changing membership throws an exception
-- `(add g to-add)` -> new graph with <i>to-add></i> added
-- `(subtract g to-subtract)` -> new graph with <i>to-subtract</i> absent.
+- `(add g to-add)` -> new graph with <i>to-add</i> present
+- `(subtract g to-subtract)` -> new graph with <i>to-subtract</i> absent
 
 Also `invoke` to support `IFn` as follows
 - `(g)` = `(normal-form g)`
@@ -36,7 +34,15 @@ Also `invoke` to support `IFn` as follows
 - `(g s p)` = `(get-o g s p)`
 - `(g s p o)` = `(ask g s p o)`
 
-The [source file]([IGraph](https://github.com/ont-app/igraph/blob/master/src/igraph/core.clj)) has fairly explicit docstrings.
+The [source file](https://github.com/ont-app/igraph/blob/master/src/igraph/core.clj) has fairly explicit docstrings.
+
+### ISet
+
+It may make sense for some implementations of IGraph also to implment the basic set operations, defined in ISet:
+
+- `(union g1 12)` -> A new graph with all triples from both graphs
+- `(difference g1 g2)` -> A new graph with triples in g1 not also in g2
+- `(intersection g1 g2)` -> A new graph with only triples shared in both graphs
 
 ## Graph
 
@@ -179,7 +185,7 @@ One subtracts from it like this (also returns new immutable object):
 
 ```
 
-
+Graph also implements the `ISet` functions `union`, `difference` and `intersection`.
 
 See also the  [test file](https://github.com/ont-app/igraph/blob/master/test/igraph/graph_test.clj).
 

@@ -6,14 +6,15 @@ other basic clojure data structures such as maps and sequences.
   (:require [clojure.set :as set]
             ))
 
-
+           
 (defprotocol IGraph
   "An abstraction for S-P-O graphs"
 
   ;;;;;;;;;;;;;;;;;;;;
   ;; ACCESS FUNCTIONS
   ;;;;;;;;;;;;;;;;;;;;
-  
+
+ 
   (normal-form [g] "Returns {<s> {<p> #{<o>...}...}...}
 Where 
 <s> is the subject of a triple := [<s> <p> <o>] in <g>
@@ -101,3 +102,24 @@ Where
     )
   )
 
+(defn normal-form? [m]
+  "Returns true iff <m> is in normal form for IGraph."
+  (and (instance? clojure.lang.APersistentMap m)
+       (or (empty? m)
+           (let [p (m (first (keys m)))
+                 o (p (first (keys p)))
+                 ]
+             (instance? clojure.lang.APersistentSet o)))))
+
+(defprotocol ISet
+  "Basic set operations between graphs."
+  (union [g1 g2]
+    "Returns an IGraph whose normal form contains all triples from g1 and g2"
+    )
+  (intersection [g1 g2]
+    "Returns an IGraph whose normal form contains all and only statements shared by both g1 and g2"
+    )
+  (difference [g1 g2]
+    "Returns an IGraph whose normal form contains all statements in g1 not present in g2."
+    )
+  )
