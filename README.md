@@ -16,14 +16,14 @@ This is deployed to [clojars](https://clojars.org/ont-app/igraph):
 
 ### IGraph
 The `IGraph` protocol specifies the following functions:
-#### member access
+#### Member access
 - `(normal-form g)` -> {s {p #{o...}...}...}
 - `(subjects g)` -> (s ...), a collection of subjects
 - `(get-p-o g s)` -> {p #{o...} ...}
 - `(get-o g s p)` -> #{o ...}
 - `(ask g s p o)` ->  truthy 
 - `(query g q)` -> collection of {var value ...} maps
-#### membership changes
+#### Membership changes
 - `(read-only? g)` -> true if changing membership throws an exception
 - `(add g to-add)` -> new graph with <i>to-add</i> present
 - `(subtract g to-subtract)` -> new graph with <i>to-subtract</i> absent
@@ -33,6 +33,18 @@ Also `invoke` to support `IFn` as follows
 - `(g s)` = `(get-p-o g s)`
 - `(g s p)` = `(get-o g s p)`
 - `(g s p o)` = `(ask g s p o)`
+
+
+#### Traversal
+
+- `(traverse g traversal acc to-visit)` -> acc, traversing `g` per `traversal`, starting with `to-visit`.
+- `(trasitive-closure p) -> (fn [g acc to-visit] ...) -> [acc' to visit'], a traversal argument to `traverse`.
+
+See the example in the `Graph` section below.
+
+#### utilities
+- `(normal-form? m)` -> true iff m is a map in normal form.
+
 
 The [source file](https://github.com/ont-app/igraph/blob/master/src/igraph/core.clj) has fairly explicit docstrings.
 
@@ -146,6 +158,28 @@ Querying is done with a very simple graph pattern using keywords starting with ?
 -> 
 #{{:?type :drink, :?likee :coke, :?liker :mary}
   {:?type :food, :?likee :meat, :?liker :john}}
+```
+
+Traversal is done with a function that returns the accumulator and a possibly empty list of nodes in the graph still to visit...
+```
+(def g (add (make-graph) [[:a :isa :b] 
+                          [:b :isa :c]
+                          [:c :isa :d]]))
+
+(defn isa* [g acc to-visit]
+   [(conj acc (first to-visit))
+    (concat to-visit (g (first to-visit) :isa))])
+   
+(traverse g isa* [] [:a])
+->
+[:a :b :c :d]
+```
+
+The isa* function defined above is equivalent to `transitive-closure`:
+```
+(traverse g (transitive-closure :isa) [] [:a])
+->
+[:a :b :c :d]
 ```
 
 One subtracts from it like this (also returns new immutable object):

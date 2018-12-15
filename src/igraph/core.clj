@@ -123,3 +123,52 @@ Where
     "Returns an IGraph whose normal form contains all statements in g1 not present in g2."
     )
   )
+
+
+;;;;;;;;;;;;;;;
+;;; TRAVERSAL
+;;;;;;;;;;;;;;;;
+
+(defn traverse 
+  "Returns `acc` acquired by applying `traversal` to `g`starting with `to-visit`, skipping members in `history`.
+  Where
+  <acc> is an arbitrary clojure object
+  <traversal> := (fn [g acc to-visit]...) -> [<acc'> <to-visit'>]
+  <g> is a graph
+  <to-visit> := [<node> ...]
+  <history> := #{<visited node> ...}, this is conj'd with each call.
+  <node> is typically an element in <g>
+  <visited-node> is a node visited upstream. We filter these out to
+    avoid cycles.
+"
+  ([g traversal acc to-visit]
+   (traverse g traversal acc to-visit #{}))
+  
+  ([g traversal acc to-visit history]
+   (if (or (nil? to-visit)
+           (empty? to-visit))
+     ;; nothing more to visit...
+     acc
+     ;; else we keep going
+     (if (history (first to-visit))
+       (recur g traversal acc (rest to-visit) history)
+       ;;else we're not in a cycle
+       (let [[acc to-visit-next] (traversal g acc to-visit)]
+         (recur g
+                traversal
+                acc
+                to-visit-next
+                (conj history (first to-visit))))))))
+
+(defn transitive-closure [p]
+  "Returns <traversal> for chains of `p`.
+Where
+<traversal> := (fn [g acc to-visit]...) -> [<acc'> <to-visit'>], 
+  s.t. <to-visit'> conj's all <o> s.t. (g <s> <p> <o>).  
+  A traversal function argument for the `traverse` function .
+<p> is a predicate, typcially an element of <g>
+<g> is a graph.
+"
+  (fn [g acc to-visit]
+    [(conj acc (first to-visit))
+     (concat to-visit (g (first to-visit) p))]))
