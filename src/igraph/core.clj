@@ -171,4 +171,4 @@ Where
 "
   (fn [g acc to-visit]
     [(conj acc (first to-visit))
-     (concat to-visit (g (first to-visit) p))]))
+     (concat (rest to-visit) (g (first to-visit) p))]))

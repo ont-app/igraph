@@ -141,7 +141,7 @@
     (let [g (add (make-graph) [[:a :isa :b] [:b :isa :c][:c :isa :d]])
           isa* (fn [g acc to-visit]
                  [(conj acc (first to-visit))
-                  (concat to-visit (g (first to-visit) :isa))])
+                  (concat (rest to-visit) (g (first to-visit) :isa))])
           ]
       (is (= (traverse g isa* [] [:a])
              [:a :b :c :d]))

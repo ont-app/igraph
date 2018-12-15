@@ -37,8 +37,8 @@ Also `invoke` to support `IFn` as follows
 
 #### Traversal
 
-- `(traverse g traversal acc to-visit)` -> acc, traversing `g` per `traversal`, starting with `to-visit`.
-- `(trasitive-closure p) -> (fn [g acc to-visit] ...) -> [acc' to visit'], a traversal argument to `traverse`.
+- `(traverse g traversal acc to-visit)` -> `acc`, traversing `g` per the `traversal` function, starting with `to-visit`.
+- `(trasitive-closure p)` -> (fn [g acc to-visit] ...) -> [acc' to visit'], a traversal argument to `traverse`.
 
 See the example in the `Graph` section below.
 
@@ -168,7 +168,7 @@ Traversal is done with a function that returns the accumulator and a possibly em
 
 (defn isa* [g acc to-visit]
    [(conj acc (first to-visit))
-    (concat to-visit (g (first to-visit) :isa))])
+    (concat (rest to-visit) (g (first to-visit) :isa))])
    
 (traverse g isa* [] [:a])
 ->
