@@ -22,7 +22,8 @@ With variables of the form :?x.
   <type> = (type <to-add>)
   "
   (if (= (type to-add-or-remove) clojure.lang.PersistentVector)
-    (if (= (type (to-add-or-remove 0)) clojure.lang.PersistentVector)
+    (if (and (> (count to-add-or-remove) 0)
+             (= (type (to-add-or-remove 0)) clojure.lang.PersistentVector))
       :vector-of-vectors
       :vector)
     ;; else not a vector
