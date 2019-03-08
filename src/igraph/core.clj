@@ -55,13 +55,17 @@ Where
 "
     )
   (query [g q]
-    "Returns #{<binding> ...} for query <q> applied to <g>
+    "Returns #{<binding> ...} for query spec <q> applied to <g>
 Where
-<g> is a graph
-<query> is a query in a format suitable for querying <g>
 <binding> := {<var> <value>, ...}
+<q> is a query specification suitable for the native format of <g>
+<g> is a graph
+<args> := [<arg>....]
 <var> is a variable specified in <q>
 <value> is a value found in <g> bounded to <var> per <q>
+<arg> is any optional value that informs native execution of the query.
+  for example if the native platform supports a templating scheme as in
+  datalog
 "
     )
   ;; for IFn
@@ -102,8 +106,9 @@ Where
     )
   )
 
-(defn normal-form? [m]
+(defn normal-form? 
   "Returns true iff <m> is in normal form for IGraph."
+  [m]
   (and (instance? clojure.lang.APersistentMap m)
        (or (empty? m)
            (let [p (m (first (keys m)))
@@ -124,6 +129,50 @@ Where
     )
   )
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; MULTI-METHODS FOR ALTERING GRAPHS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn alter-graph-dispatcher 
+  "Returns one of #{:vector :vector-of-vectors :normal-form <type>} for <args>
+  Where
+  <args> := [<g> <to-add-or-remove>],  arguments to a method add or remove from graph
+  <g> is a graph
+  <to-add-or-remove> is a specification of triples to add to or remove from  <g>
+  <triple> indicates <to-add-or-remove> := [<s> <p> <o>]
+  <vector-of-vectors> indicates <to-add-or-remove> := [<triple>...]
+  <type> = (type <to-add>)
+  "
+  [g to-add-or-remove]
+  (if (= (type to-add-or-remove) clojure.lang.PersistentVector)
+    (if (and (> (count to-add-or-remove) 0)
+             (= (type (to-add-or-remove 0)) clojure.lang.PersistentVector))
+      :vector-of-vectors
+      :vector)
+    ;; else not a vector
+    (if (normal-form? to-add-or-remove)
+      :normal-form
+      ;; else neither a vector nor normal form
+      (type to-add-or-remove))))
+
+(defmulti add-to-graph
+  "Returns <g>, with <to-add> added
+  Where
+  <g> is a Graph
+  <to-add> is interpetable as a set of triples
+  Dispatched according to `alter-graph-dispatcher`
+  "
+  alter-graph-dispatcher)
+
+(defmulti remove-from-graph
+  "Returns <g>, with <to-add> added
+  Where
+  <g> is a Graph
+  <to-add> is interpetable as a set of triples
+  Dispatched according to `alter-graph-dispatcher`
+  "  
+  alter-graph-dispatcher)
 
 ;;;;;;;;;;;;;;;
 ;;; TRAVERSAL
@@ -160,7 +209,7 @@ Where
                 to-visit-next
                 (conj history (first to-visit))))))))
 
-(defn transitive-closure [p]
+(defn transitive-closure 
   "Returns <traversal> for chains of `p`.
 Where
 <traversal> := (fn [g acc to-visit]...) -> [<acc'> <to-visit'>], 
@@ -168,7 +217,29 @@ Where
   A traversal function argument for the `traverse` function .
 <p> is a predicate, typcially an element of <g>
 <g> is a graph.
-"
+  "
+  [p]
   (fn [g acc to-visit]
     [(conj acc (first to-visit))
      (concat (rest to-visit) (g (first to-visit) p))]))
+
+
+;;;;;;;;;;;;;;;;;;;;
+;; Utility functions
+;;;;;;;;;;;;;;;;;;;;
+
+(defn unique
+  "Returns the single member of <coll>, or nil if <coll> is empty. Calls <if-plural> if there is more than one member (default is to throw an Exception).
+  Where
+  <coll> is a collection
+  <if-plural> := (fn [coll] ...) -> <value>, default raises an error.
+  Note: this can be used when you've called (G s p) and you're sure there is
+    only one object.
+  "
+  ([coll on-plural]
+   (if (not (empty? coll))
+     (if (> (count coll) 1)
+       (on-plural coll)
+       (first coll))))
+  ([coll]
+   (unique coll (fn [coll] (throw (Exception. (str "Non-unique: " coll)))))))

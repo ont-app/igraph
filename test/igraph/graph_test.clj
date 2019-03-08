@@ -92,7 +92,8 @@
   (testing "Tests a basic query against the dummy test-graph"
     (is (= (query test-graph
                   [[:?liker :likes :?likee]
-                   [:?likee :isa :?type]])
+                   [:?likee :isa :?type]]
+                  )
            #{{:?type :drink,
               :?likee :coke,
               :?liker :mary}

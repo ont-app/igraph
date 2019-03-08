@@ -3,6 +3,34 @@
 On typically adds to it with [[<s> <p> <o>]...].
 One queries it with a simple graph pattern of the form [[<s> <p> <o>]...]
 With variables of the form :?x.
+
+The core type declaration:
+
+(deftype Graph [schema contents]
+  
+  IGraph
+  (normal-form [g] (.contents g))
+  (subjects [g] (keys (.contents g)))
+  (get-p-o [g s] (get (.contents g) s))
+  (get-o [g s p] (get-in (.contents g) [s p]))
+  (ask [g s p o] (get-in (.contents g) [s p o]))
+  (query [g q] (query-graph g q))
+  (read-only? [g] false)
+  (add [g to-add] (add-to-graph g to-add))
+  (subtract [g to-subtract] (remove-from-graph g to-subtract))
+  
+  clojure.lang.IFn
+  (invoke [g] (normal-form g))
+  (invoke [g s] (get-p-o g s))
+  (invoke [g s p] (get-o g s p))
+  (invoke [g s p o] (ask g s p o))
+  
+  ISet
+  (union [g1 g2] (add-to-graph g1 (g2)))
+  (intersection [g1 g2] (get-intersection g1 g2))
+  (difference [g1 g2] (remove-from-graph g1 (g2)))
+  )
+
 "}
     igraph.graph
   (:require [clojure.set :as set]
@@ -11,49 +39,11 @@ With variables of the form :?x.
   #_(:gen-class))
 
 
-(defn alter-graph-dispatcher [g to-add-or-remove]
-  "Returns one of #{:vector :vector-of-vectors <type>} for <args>
-  Where
-  <args> := [<g> <to-alter>],  arguments to a method add or remove from graph
-  <g> is a graph
-  <to-alter> is a specification of triples to add to or remove from  <g>
-  <triple> indicates <to-alter> := [<s> <p> <o>]
-  <vector-of-vectors> indicates <to-alter> := [<triple>...]
-  <type> = (type <to-add>)
-  "
-  (if (= (type to-add-or-remove) clojure.lang.PersistentVector)
-    (if (and (> (count to-add-or-remove) 0)
-             (= (type (to-add-or-remove 0)) clojure.lang.PersistentVector))
-      :vector-of-vectors
-      :vector)
-    ;; else not a vector
-    (if (normal-form? to-add-or-remove)
-      :normal-form
-      ;; else neither a vector nor normal form
-      (type to-add-or-remove))))
-
-(defmulti add-to-graph
-  "Returns <g>, with <to-add> added
-  Where
-  <g> is a Graph
-  <to-add> is interpetable as a set of triples
-  "
-  alter-graph-dispatcher)
-
-(defmulti remove-from-graph
-  "Returns <g>, with <to-add> added
-  Where
-  <g> is a Graph
-  <to-add> is interpetable as a set of triples
-  "  
-  alter-graph-dispatcher)
-
-
 (declare query-graph) ;; defined below
 (declare get-intersection)
 
 (deftype Graph [schema contents]
-
+  
   IGraph
   (normal-form [g] (.contents g))
   (subjects [g] (keys (.contents g)))
@@ -82,6 +72,7 @@ With variables of the form :?x.
 (defn make-graph
   "Returns <graph>, intialized per optional <schema> and <contents>
   Where
+  <graph> is an instance of the `Graph` record, which implments `IGraph`, `Ifn` and `ISet`
   <schema> is not presently used
   <contents> is a normal-form representation of initial contents.
     see also igraph/normal-form.
@@ -167,8 +158,8 @@ Note: typically used to inform removal of nodes in a graph, where <key> is
                  dissociated))))))
 
 
-(defn shared-keys [m1 m2]
-  "Returns #{<shared key>...} for <m1> and <m2>
+(defn- shared-keys [m1 m2]
+  "Returns {<shared key>...} for <m1> and <m2>
 Where
 <shared key> is a key in both maps <m1> and <m2>
 "
@@ -243,7 +234,12 @@ Note:
 
 
 
-(defn get-intersection [g1 g2]
+(defn get-intersection
+  "Returns a new graph whose triples are shared between `g1` and `g2`
+  Where
+  <g1> and <g2> both implement IGraph.
+  "
+  [g1 g2]
   (let [collect-p
         (fn [s acc p]
           (assoc-in acc
@@ -545,29 +541,9 @@ Note: this is typically used to populate the 'specified' graph in
   "
   [^Graph g
    ^clojure.lang.PersistentVector graph-pattern]
-  
   (:bindings
    (reduce (partial -collect-clause-matches g)
            {}
            graph-pattern)))
 
-;;;;;;;;;;;;;;;;;;;;
-;; Utility functions
-;;;;;;;;;;;;;;;;;;;;
-
-(defn unique
-  "Returns the single member of <coll>, or nil if <coll> is empty. Calls <if-plural> if there is more than one member (default is to throw an Exception).
-  Where
-  <coll> is a collection
-  <if-plural> := (fn [coll] ...) -> <value>, default raises an error.
-  Note: this can be used when you've called (G s p) and you're sure there is
-    only one object.
-  "
-  ([coll on-plural]
-   (if (not (empty? coll))
-     (if (> (count coll) 1)
-       (on-plural coll)
-       (first coll))))
-  ([coll]
-   (unique coll (fn [coll] (throw (Exception. (str "Non-unique: " coll)))))))
        
