@@ -4,21 +4,36 @@
             [igraph.graph :refer :all]
             ))
 
-(defonce test-graph (add (make-graph)
-                         [[:john :isa :person]
-                          [:john :likes :meat]
-                          [:john :name {:value "John" :lang "en"}]
-                          [:mary
-                           :isa :person
-                           :likes :coke
-                           :name {:value "Mary" :lang "en"}
-                           ]
-                          [:likes :isa :property]
-                          [:isa :isa :property]
-                          [:meat :isa :food]
-                          [:coke :isa :drink]
-                          ]))
+(def test-graph (add (make-graph)
+                     [[:john :isa :person]
+                      [:john :likes :meat]
+                      [:john :name {:value "John" :lang "en"}]
+                      [:mary
+                       :isa :person
+                       :likes :coke
+                       :name {:value "Mary" :lang "en"}
+                       ]
+                      [:likes :isa :property]
+                      [:isa :isa :property]
+                      [:meat :isa :food]
+                      [:coke :isa :drink]
+                      [:drink :subClassOf :consumable]
+                      [:meat :subClassOf :consumable]
+                      [:consumable :subClassOf :thing]
+                      [:person :subClassOf :thing]
+                      ]))
 
+
+(def subClassOf* (transitive-closure :subClassOf))
+(defn isa->subClassOf* [g context acc queue]
+  [context
+   (->> queue 
+        (traverse g (traverse-link :isa) (assoc (dissoc context :seek)
+                                                :phase :isa) #{})
+        vec
+        (traverse g (transitive-closure :subClassOf) (assoc context :phase :sc)
+                  #{}))
+   []])
 
 (deftest invoke-test
   (testing "Invokes the test-graph as a function with different arities"
@@ -33,8 +48,12 @@
              :name #{{:value "Mary", :lang "en"}}},
             :likes {:isa #{:property}},
             :isa {:isa #{:property}},
-            :meat {:isa #{:food}},
-            :coke {:isa #{:drink}}}))
+            :meat {:isa #{:food}, :subClassOf #{:consumable}},
+            :coke {:isa #{:drink}},
+            :drink {:subClassOf #{:consumable}},
+            :consumable {:subClassOf #{:thing}},
+            :person {:subClassOf #{:thing}}}
+           ))
     (is (= (test-graph :john) ;; returns (get-p-o g s)
            {:isa #{:person},
             :likes #{:meat},
@@ -43,6 +62,8 @@
            #{:meat}))
     (is (= (test-graph :john :likes :meat) ;; returns (ask g s p o)
            :meat))
+    (is (= (test-graph :drink subClassOf* :consumable)
+           :consumable))
     ))
 
 (deftest subtract-test
@@ -54,8 +75,12 @@
              :name #{{:value "Mary", :lang "en"}}},
             :likes {:isa #{:property}},
             :isa {:isa #{:property}},
-            :meat {:isa #{:food}},
-            :coke {:isa #{:drink}}}))
+            :meat {:isa #{:food}, :subClassOf #{:consumable}},
+            :coke {:isa #{:drink}},
+            :drink {:subClassOf #{:consumable}},
+            :consumable {:subClassOf #{:thing}},
+            :person {:subClassOf #{:thing}}}
+           ))
     (is (= (normal-form (subtract test-graph [:john :likes]))
            {:john {:isa #{:person}, :name #{{:value "John", :lang "en"}}},
             :mary
@@ -64,8 +89,13 @@
              :name #{{:value "Mary", :lang "en"}}},
             :likes {:isa #{:property}},
             :isa {:isa #{:property}},
-            :meat {:isa #{:food}},
-            :coke {:isa #{:drink}}}))
+            :meat {:isa #{:food}, :subClassOf #{:consumable}},
+            :coke {:isa #{:drink}},
+            :drink {:subClassOf #{:consumable}},
+            :consumable {:subClassOf #{:thing}},
+            :person {:subClassOf #{:thing}}}
+           ))
+
     (is (= (normal-form (subtract test-graph [:john :likes :meat]))
            {:john {:isa #{:person}, :name #{{:value "John", :lang "en"}}},
             :mary
@@ -74,8 +104,12 @@
              :name #{{:value "Mary", :lang "en"}}},
             :likes {:isa #{:property}},
             :isa {:isa #{:property}},
-            :meat {:isa #{:food}},
-            :coke {:isa #{:drink}}}))
+            :meat {:isa #{:food}, :subClassOf #{:consumable}},
+            :coke {:isa #{:drink}},
+            :drink {:subClassOf #{:consumable}},
+            :consumable {:subClassOf #{:thing}},
+            :person {:subClassOf #{:thing}}}
+           ))
     (is (= (normal-form (subtract test-graph [[:john
                                                :likes :meat
                                                :isa :person]
@@ -84,8 +118,13 @@
             :mary {:isa #{:person}, :likes #{:coke}},
             :likes {:isa #{:property}},
             :isa {:isa #{:property}},
-            :meat {:isa #{:food}},
-            :coke {:isa #{:drink}}}))
+            :meat {:isa #{:food}, :subClassOf #{:consumable}},
+            :coke {:isa #{:drink}},
+            :drink {:subClassOf #{:consumable}},
+            :consumable {:subClassOf #{:thing}},
+            :person {:subClassOf #{:thing}}}
+           
+           ))
     ))
 
 (deftest query-test
@@ -111,8 +150,9 @@
     (is (thrown? Exception (unique #{:just-me :no-theres-me-too!})))
 
     (is (= (unique [:just-me :no-theres-me-too!] first)
-           :just-me)
-    )))
+           :just-me))
+
+    ))
 
 (deftest iset-test
   (testing "Test the ISet functions"
@@ -140,14 +180,31 @@
 (deftest traverse-test
   (testing "Test traverse and transitive-closure"
     (let [g (add (make-graph) [[:a :isa :b] [:b :isa :c][:c :isa :d]])
-          isa* (fn [g acc to-visit]
-                 [(conj acc (first to-visit))
+          isa* (fn [g context acc to-visit]
+                 [context,
+                  (conj acc (first to-visit)),
                   (concat (rest to-visit) (g (first to-visit) :isa))])
           ]
       (is (= (traverse g isa* [] [:a])
              [:a :b :c :d]))
       ;; transitive-closure writes equivalent of isa*...
       (is (= (traverse g (transitive-closure :isa) [] [:a])
-             [:a :b :c :d])))))
+             [:a :b :c :d]))
       
+      ;; traversal p's
+      (is (= (test-graph :coke (traverse-link :isa))
+             #{:drink}))
+      (is (= (test-graph :coke (traverse-link :isa) :drink)
+             :drink))
+      (is (= (test-graph :drink subClassOf*)
+             #{:consumable :drink :thing}))
+      (is (= (test-graph :coke isa->subClassOf* :consumable)
+             :consumable))
+      (is (= (test-graph :coke isa->subClassOf* :drink)
+             :drink))
+      (is (= (test-graph :coke isa->subClassOf* :person)
+             nil))      
+      )))
+
+
       

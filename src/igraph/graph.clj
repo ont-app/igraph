@@ -22,8 +22,8 @@ The core type declaration:
   clojure.lang.IFn
   (invoke [g] (normal-form g))
   (invoke [g s] (get-p-o g s))
-  (invoke [g s p] (get-o g s p))
-  (invoke [g s p o] (ask g s p o))
+  (invoke [g s p] (match-or-traverse g s p))
+  (invoke [g s p o] (match-or-traverse g s p o))
   
   ISet
   (union [g1 g2] (add-to-graph g1 (g2)))
@@ -42,6 +42,7 @@ The core type declaration:
 (declare query-graph) ;; defined below
 (declare get-intersection)
 
+
 (deftype Graph [schema contents]
   
   IGraph
@@ -58,15 +59,14 @@ The core type declaration:
   clojure.lang.IFn
   (invoke [g] (normal-form g))
   (invoke [g s] (get-p-o g s))
-  (invoke [g s p] (get-o g s p))
-  (invoke [g s p o] (ask g s p o))
+  (invoke [g s p] (match-or-traverse g s p))
+  (invoke [g s p o] (match-or-traverse g s p o))
   
   ISet
   (union [g1 g2] (add-to-graph g1 (g2)))
   (intersection [g1 g2] (get-intersection g1 g2))
   (difference [g1 g2] (remove-from-graph g1 (g2)))
   )
-
 
 
 (defn make-graph
@@ -81,6 +81,9 @@ The core type declaration:
       :or {schema [::subject ::predicate ::object] ;; TODO make this relevant
            contents {}}}]
    (Graph. schema contents)))
+
+
+
 
 (defmethod add-to-graph :normal-form [g to-add]
   {:pre (normal-form? to-add)
@@ -266,7 +269,8 @@ Note:
   starts with ?)
   "
   [spec]
-  (not (nil? (re-matches #"^\?.*" (name spec)))))
+  (and (keyword? spec)
+       (not (nil? (re-matches #"^\?.*" (name spec))))))
 
 (defn- -matches-spec?
   "
@@ -276,6 +280,7 @@ Note:
   <spec> := is an element in some query clause
   <query-context> := (keys %) -> #{maybe :var-tests ...} , typically
     the 'context' argument in an -X-matches function.
+  <var-tests> := {<var> (fn[target]...) -> true if <target> matches <var>, ...}
   "
   {:test (fn [] (= (-matches-spec? {:var-tests {:?x (fn [x] false)}} :?x "blah")
                    false))
@@ -291,12 +296,12 @@ Note:
       (= spec target))))
 
 (defn- -annotate-match
-  "Returns <match> modified per <spec> and <value> only if (query-var? <spec>)
+  "Returns <match'> modified per <spec> and <value> only if (query-var? <spec>)
   Where
-  <match> := (keys %) -> #{:matched? <var> ...}, typically acquired matching
-    a graph pattern
+  <match> := {:matched? <boolean>, <var> <value> ...}, typically acquired
+    matching a graph pattern
   <spec> is an element of a graph pattern.
-  <var> is a variable spec which matched <value>
+  <var> is a variable <spec> which matched <value>
   <value> is a value to be asigned to <spec> if (query-var? <spec>)
   "
   [spec value match]
@@ -310,9 +315,9 @@ Note:
 
 (defn- -o-match 
   "
-  Returns <match-result> to <next-o> in <context> querying <g>
+  Returns <match> to <next-o> in <context> querying <g>
   Where
-  <match-result> := (keys %) -> #{:matched? &maybe <var>}
+  <match> := {:matched? <var>, <var> <o>, ... }
   <g> is a graph>
   <context> := (keys %) -> #{:spec :s :p :o}
   <next-o> is a graph element to be matched against <o>
@@ -333,11 +338,11 @@ Note:
 (defn- -p-o-matches
   "Returns <match-results> for <g> in <context> given <next-p>
   Where
-  <match-results> := [<match-result> ...]
-  <match result> := (keys %) -> #{:matched? <var>, ...}
+  <match-results> := [<match> ...]
+  <match> := {:matched? <matched?>, <var> <value>, ...}
   <matched?> is true iff <p> matched <next-p> and <o> matched downstream
   <g> is a Graph
-  <context> := (keys %) -> {:s :spec}
+  <context> :=  {:s <s> :spec <spec>}
   <s> is a subject element of <g> and the <s> argument in some graph pattern
     clause
   <spec> := [<p> <o>] derived from some graph pattern clause.
@@ -345,31 +350,31 @@ Note:
   [^Graph g
    ^clojure.lang.PersistentArrayMap context
    ^clojure.lang.PersistentVector next-p]
-  (let [[p o] (:spec context)
+  (let [[p-spec o-spec] (:spec context)
         ]
-    (if (not (-matches-spec? context p next-p))
+    (if (not (-matches-spec? context p-spec next-p))
       {:matched? false}
       ;; else it matches <p>...
-      (map (partial -annotate-match p next-p)
+      (map (partial -annotate-match p-spec next-p)
            ;; try to match on <o> ...
            (filter :matched?
                    (map (partial -o-match
                                  g
                                  (assoc context
-                                        :p p
-                                        :spec [o]))
+                                        :p next-p ;; p-spec
+                                        :spec [o-spec]))
                         (g (:s context) next-p)))))))
 
-(defn- -s-p-o-matches
+(defn- old--s-p-o-matches
   "Returns <match-results> for <g> <context> and <next-s>
   Where
-  <match-results> := [<match-result> ...]
-  <match result> := (keys %) -> #{:matched? <var>, ...}
+  <match-results> := [<match> ...]
+  <match> := #{:matched? <matched?>, <var> <value>,...}
   <matched?> is true iff <s> matched <next-s> and <p> and <o> matched downstream
   <g> is a Graph
-  <context> := (keys %) -> #{:spec :var-tests}
-  <spec> := [<s> <p> <o>], a query triple.
-  <s> specifies a match to subjects in the graph pattern clause
+  <context> := {:spec <spec> :var-tests <var-tests>}
+  <spec> := [<s-spec> <p-spec> <o-spec>], a query triple.
+  <s-spec> specifies a match to subjects in the graph pattern clause
   <var-tests> := {<var> <test> ...}
   <test> := (fn [next-s]) -> true if next-s cannot be excluded from matching
     in the current context.
@@ -377,46 +382,89 @@ Note:
   [^Graph g
    ^clojure.lang.PersistentArrayMap context
    next-s]
-  (let [[s p o] (:spec context)
+  (let [[s-spec p-spec o-spec] (:spec context)
         ]
-    (if (not (-matches-spec? context s next-s))
+    (if (not (-matches-spec? context s-spec next-s))
       {:matched? false}
       ;; else it matches the spec
-      (map (partial -annotate-match s next-s)
+      (map (partial -annotate-match s-spec next-s)
            (filter :matched?
                    (mapcat (partial -p-o-matches
                                     g
                                     (assoc context
                                            :s next-s
-                                           :spec [p o]))
+                                           :spec [p-spec o-spec]))
                            (keys (g next-s))))))))
+
+(defn- -s-p-o-matches
+  "Returns <match-results> for <g> <context> and <next-s>
+  Where
+  <match-results> := [<match> ...]
+  <match> := #{:matched? <matched?>, <var> <value>,...}
+  <matched?> is true iff <s> matched <next-s> and <p> and <o> matched downstream
+  <g> is a Graph
+  <context> := {:spec <spec> :var-tests <var-tests>}
+  <spec> := [<s-spec> <p-spec> <o-spec>], a query triple.
+  <s-spec> specifies a match to subjects in the graph pattern clause
+  <var-tests> := {<var> <test> ...}
+  <test> := (fn [next-s]) -> true if next-s cannot be excluded from matching
+    in the current context.
+  "
+  [^Graph g
+   ^clojure.lang.PersistentArrayMap context
+   next-s]
+  (let [[s-spec p-spec o-spec] (:spec context)
+        ]
+    (if (not (-matches-spec? context s-spec next-s))
+      {:matched? false}
+      (map (partial -annotate-match s-spec next-s)
+           (filter :matched?
+                   (if (fn? p-spec) ;; traversal-fn
+                     (map (partial -o-match
+                                   g
+                                   (assoc context
+                                          :s next-s
+                                          :spec [o-spec]))
+                          (traverse g p-spec #{} [next-s]))
+                     ;; else it's not a traversal function...
+                     (mapcat (partial -p-o-matches
+                                      g
+                                      (assoc context
+                                             :s next-s
+                                             :spec [p-spec o-spec]))
+                             (keys (g next-s)))))))))
 
 
 (defn- -query-clause-matches
-  "Returns <results> for <clause> posed against <g>
+  "Returns <matches> for <clause> posed against <g> using <var-tests>
   Where
-  <results> := [<result> ...]
-  <result> := #(keys %) -> #{:matched? <var> ....}
-  <clause> :=[<s> <p> <o>], a line from a simple query
+  <matches> := [<match> ...]
+  <clause> :=[<s-spec> <p-spec> <o-spec>], a line from a simple query
   <g> is an instance of Graph.
-  <s> <p> and <o> are either variables or graph elements to match in the graph
-    pattern
-  <matched?> is true iff <clause> matches the contents of the graph.
+  <var-tests> := {<var> (fn [value] ....) -> true if <value> matches <var>, ...}
+  <match> := {:matched? <matched?>, <var> <value>, ...}
+  <s-spec> and <o-spec> are either variables or graph elements to match in
+    the graph pattern
+  <p-spec> is either a variable, a graph element to match in the graph, or a
+    traversal function := (fn [g acc queue]...) -> [acc' queue'] s.t.
+    (traverse g p #{} s) -> #{<o> ....}
+  <matched?> is true iff <clause> matches the contents of the graph per
+    <var-tests>
   <var> names the subset of <s> <p> <o> for which (query-var? %) is true
-  <value> is a single value in <g> matching <var>
+  <value> is an element in <g> s.t. ((<var> <var-tests>) <value>)
   "
   ([^Graph g
     ^clojure.lang.PersistentVector clause
     ^clojure.lang.PersistentArrayMap var-tests]
-   (let [[s p o] clause
+   (let [[s-spec p-spec o-spec] clause
          ]
      (map #(dissoc % :matched?)
           (filter :matched?
                   (mapcat  (partial -s-p-o-matches g {:var-tests var-tests
                                                       :spec clause})
-                           (if (query-var? s)
+                           (if (query-var? s-spec)
                              (keys (.contents g))
-                             [s]))))))
+                             [s-spec]))))))
   ;; no var-tests specified
   ([g clause]
    (-query-clause-matches g clause {})))
@@ -425,13 +473,16 @@ Note:
 (defn- -collect-clause-match
   "Returns <clause-state> modified for <match> to <g> in <query-state>
   Where
-  <clause-state> := (keys %) -> #{:bindings :shared-bound} appended by
-    <match> applied to appropriate candidates in (:bindings <query-state>)
-  <query-state> := (keys %) -> #{:bindings :specified :matched?},
-    modified s.t. each match found for clause is joined with compatible
+  <clause-state> := {:bindings <bindings> :shared-bound <shared-bound>}
+    s.t. <bindings> membership is appropriately modified per <match>
+  <match> := {:matched? <match-matched?>, <var> <value>, ...}  
+  <query-state> := {:bindings <bindings>
+                    :specified <specified>
+                    :matched? <state-matched?>},
+    modified s.t. each <match> found for <clause> is joined with compatible
     existing matches.
   <bindings> := #{<binding>...} typically to some query clause
-  <binding> a valid match integrating compatible matches form all previous
+  <binding> is a valid <match> integrating compatible matches from all previous
     clauses
   <shared-bound> := #{<var> ...}, s.t. <var> is bound in <specified>, and
     also present in the current graph pattern clause. This means new bindings
