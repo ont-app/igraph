@@ -18,7 +18,7 @@
                       [:meat :isa :food]
                       [:coke :isa :drink]
                       [:drink :subClassOf :consumable]
-                      [:meat :subClassOf :consumable]
+                      [:food :subClassOf :consumable]
                       [:consumable :subClassOf :thing]
                       [:person :subClassOf :thing]
                       ]))
@@ -139,7 +139,19 @@
              {:?type :food,
               :?likee :meat,
               :?liker :john}}
-           ))))
+           ))
+    (is (= (query test-graph
+                  [[:?liker :likes :?likee]
+                   [:?likee :isa :?class]
+                   [:?class subClassOf* :?super]])
+           #{{:?super :thing, :?class :food, :?likee :meat, :?liker :john}
+             {:?super :thing, :?class :drink, :?likee :coke, :?liker :mary}
+             {:?super :food, :?class :food, :?likee :meat, :?liker :john}
+             {:?super :consumable, :?class :drink, :?likee :coke, :?liker :mary}
+             {:?super :consumable, :?class :food, :?likee :meat, :?liker :john}
+             {:?super :drink, :?class :drink, :?likee :coke, :?liker :mary}}))
+    ))
+
 
 (deftest utility-test
   (testing "Test the `unique` function"

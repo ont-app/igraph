@@ -13,7 +13,6 @@ other basic clojure data structures such as maps and sequences.
   ;;;;;;;;;;;;;;;;;;;;
   ;; ACCESS FUNCTIONS
   ;;;;;;;;;;;;;;;;;;;;
-
  
   (normal-form [g] "Returns {<s> {<p> #{<o>...}...}...}
 Where 
@@ -79,7 +78,6 @@ Where
 (g s p o) -> <o> iff [<s> <p> <o>] is in <g> ;; = (match-or-traverse g s p o)
 ")
 
-
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; CONTENT MANIPULATION FUNCTIONS
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,7 +105,6 @@ Where
 "
     )
   )
-
 
 (defn normal-form? 
   "Returns true iff <m> is in normal form for IGraph."

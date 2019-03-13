@@ -365,37 +365,6 @@ Note:
                                         :spec [o-spec]))
                         (g (:s context) next-p)))))))
 
-(defn- old--s-p-o-matches
-  "Returns <match-results> for <g> <context> and <next-s>
-  Where
-  <match-results> := [<match> ...]
-  <match> := #{:matched? <matched?>, <var> <value>,...}
-  <matched?> is true iff <s> matched <next-s> and <p> and <o> matched downstream
-  <g> is a Graph
-  <context> := {:spec <spec> :var-tests <var-tests>}
-  <spec> := [<s-spec> <p-spec> <o-spec>], a query triple.
-  <s-spec> specifies a match to subjects in the graph pattern clause
-  <var-tests> := {<var> <test> ...}
-  <test> := (fn [next-s]) -> true if next-s cannot be excluded from matching
-    in the current context.
-  "
-  [^Graph g
-   ^clojure.lang.PersistentArrayMap context
-   next-s]
-  (let [[s-spec p-spec o-spec] (:spec context)
-        ]
-    (if (not (-matches-spec? context s-spec next-s))
-      {:matched? false}
-      ;; else it matches the spec
-      (map (partial -annotate-match s-spec next-s)
-           (filter :matched?
-                   (mapcat (partial -p-o-matches
-                                    g
-                                    (assoc context
-                                           :s next-s
-                                           :spec [p-spec o-spec]))
-                           (keys (g next-s))))))))
-
 (defn- -s-p-o-matches
   "Returns <match-results> for <g> <context> and <next-s>
   Where

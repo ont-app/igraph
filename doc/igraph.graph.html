@@ -23,8 +23,8 @@ The core type declaration:
   clojure.lang.IFn
   (invoke [g] (normal-form g))
   (invoke [g s] (get-p-o g s))
-  (invoke [g s p] (get-o g s p))
-  (invoke [g s p o] (ask g s p o))
+  (invoke [g s p] (match-or-traverse g s p))
+  (invoke [g s p o] (match-or-traverse g s p o))
   
   ISet
   (union [g1 g2] (add-to-graph g1 (g2)))
