@@ -46,7 +46,7 @@ The core type declaration:
 (deftype Graph [schema contents]
   
   IGraph
-  (normal-form [g] (.contents g))
+  (normal-form [g] (.contents g)) 
   (subjects [g] (keys (.contents g)))
   (get-p-o [g s] (get (.contents g) s))
   (get-o [g s p] (get-in (.contents g) [s p]))
@@ -80,14 +80,15 @@ The core type declaration:
   ([&{:keys [schema contents]
       :or {schema [::subject ::predicate ::object] ;; TODO make this relevant
            contents {}}}]
-   (Graph. schema contents)))
+   {:pre [(= (triples-format contents) :normal-form)]
+    }
+   (Graph. schema (with-meta contents {:triples-format :normal-form}))))
 
 
 
 
-(defmethod add-to-graph :normal-form [g to-add]
-  {:pre (normal-form? to-add)
-   }
+
+(defmethod add-to-graph [Graph :normal-form] [g to-add]
   (letfn [(collect-key [m acc k]
             (assoc acc k
                    (if (contains? acc k)
@@ -107,7 +108,7 @@ The core type declaration:
    :schema (.schema g)
    :contents (merge-tree (g) to-add))))
 
-(defmethod add-to-graph :vector-of-vectors [g triples]
+(defmethod add-to-graph [Graph :vector-of-vectors] [g triples]
   "
 Where <triples> := [<v> ....]
 <v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] 
@@ -126,11 +127,11 @@ Where <triples> := [<v> ....]
      :schema (.schema g)
      :contents (reduce collect-vector (.contents g) triples))))
 
-(defmethod add-to-graph :vector [g triple]
+(defmethod add-to-graph [Graph :vector] [g triple]
   (assert (= (count triple) 3))
   (add-to-graph g [triple]))
 
-(defmethod add-to-graph clojure.lang.LazySeq [g the-seq]
+(defmethod add-to-graph [Graph clojure.lang.LazySeq] [g the-seq]
   (add-to-graph g (vec the-seq)))
 
 
@@ -169,9 +170,7 @@ Where
   (set/intersection (set (keys m1))
                     (set (keys m2))))
 
-(defmethod remove-from-graph :normal-form [g to-remove]
-  {:pre (normal-form? to-remove)
-   }
+(defmethod remove-from-graph [Graph :normal-form] [g to-remove]
   (letfn [(dissoc-in [shared-path acc value]
             (let [shared-path (conj shared-path value)
                   ]
@@ -196,7 +195,7 @@ Where
                        (g)
                        (shared-keys (g) to-remove)))))
 
-(defmethod remove-from-graph :vector-of-vectors [g triples]
+(defmethod remove-from-graph [Graph :vector-of-vectors] [g triples]
   "
 Where <triples> := [<v> ....]
 <v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] , or [<s>] or [<s> <p>]
@@ -223,7 +222,7 @@ Note:
      :schema (.schema g)
      :contents (reduce collect-vector (.contents g) triples))))
 
-(defmethod remove-from-graph :vector [g to-remove]
+(defmethod remove-from-graph [Graph :vector] [g to-remove]
   "Where
 <to-remove> may be [s] [s p] [s p o]
 "

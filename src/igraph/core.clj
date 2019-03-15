@@ -106,15 +106,6 @@ Where
     )
   )
 
-(defn normal-form? 
-  "Returns true iff <m> is in normal form for IGraph."
-  [m]
-  (and (instance? clojure.lang.APersistentMap m)
-       (or (empty? m)
-           (let [p (m (first (keys m)))
-                 o (p (first (keys p)))
-                 ]
-             (instance? clojure.lang.APersistentSet o)))))
 
 (defprotocol ISet
   "Basic set operations between graphs."
@@ -134,45 +125,59 @@ Where
 ;;; MULTI-METHODS FOR ALTERING GRAPHS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn alter-graph-dispatcher 
-  "Returns one of #{:vector :vector-of-vectors :normal-form <type>} for <args>
+(defn normal-form? 
+  "Returns true iff <m> is in normal form for IGraph."
+  [m]
+  (and (instance? clojure.lang.APersistentMap m)
+       (or (empty? m)
+           (let [p (m (first (keys m)))
+                 o (p (first (keys p)))
+                 ]
+             (instance? clojure.lang.APersistentSet o)))))
+
+(defn triples-format 
+  "Returns the value of (:triples-format (meta <triples-spec>)) or one of #{:vector :vector-of-vectors :normal-form <type>} inferred from the shape of <triples-spec>
   Where
-  <args> := [<g> <to-add-or-remove>],  arguments to a method add or remove from graph
+  <args> := [<g> <triples-spec>],  arguments to a method add or remove from graph
   <g> is a graph
-  <to-add-or-remove> is a specification of triples to add to or remove from  <g>
-  <triple> indicates <to-add-or-remove> := [<s> <p> <o>]
-  <vector-of-vectors> indicates <to-add-or-remove> := [<triple>...]
-  <type> = (type <to-add>)
+  <triples-spec> is a specification of triples typically to add to or remove
+    from  <g>
+  :normal-form indicates (normal-form? <triples-spec>) = true
+  :triple indicates <triples-spec> := [<s> <p> <o>]
+  :vector-of-vectors indicates <triples-spec> := [<triple>...]
+  <type> = (type <triples-spec>)
   "
-  [g to-add-or-remove]
-  (if (= (type to-add-or-remove) clojure.lang.PersistentVector)
-    (if (and (> (count to-add-or-remove) 0)
-             (= (type (to-add-or-remove 0)) clojure.lang.PersistentVector))
-      :vector-of-vectors
-      :vector)
-    ;; else not a vector
-    (if (normal-form? to-add-or-remove)
-      :normal-form
-      ;; else neither a vector nor normal form
-      (type to-add-or-remove))))
+  [triples-spec]
+  (or (:triples-format (meta triples-spec))
+      ;; else there's no metadata...
+      (if (= (type triples-spec) clojure.lang.PersistentVector)
+        (if (and (> (count triples-spec) 0)
+                 (= (type (triples-spec 0)) clojure.lang.PersistentVector))
+          :vector-of-vectors
+          :vector)
+        ;; else not a vector
+        (if (normal-form? triples-spec)
+          :normal-form
+          ;; else neither a vector nor normal form
+          (type triples-spec)))))
 
 (defmulti add-to-graph
   "Returns <g>, with <to-add> added
   Where
   <g> is a Graph
   <to-add> is interpetable as a set of triples
-  Dispatched according to `alter-graph-dispatcher`
+  Dispatched according to `triples-format`
   "
-  alter-graph-dispatcher)
+  (fn [g to-add] [(type g) (triples-format to-add)]))
 
 (defmulti remove-from-graph
   "Returns <g>, with <to-add> added
   Where
   <g> is a Graph
   <to-add> is interpetable as a set of triples
-  Dispatched according to `alter-graph-dispatcher`
+  Dispatched according to `triples-format`
   "  
-  alter-graph-dispatcher)
+  (fn [g to-remove] [(type g) (triples-format to-remove)]))
 
 ;;;;;;;;;;;;;;;
 ;;; TRAVERSAL

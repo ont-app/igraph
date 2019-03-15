@@ -23,8 +23,9 @@
                       [:person :subClassOf :thing]
                       ]))
 
-
+^traversal-fn
 (def subClassOf* (transitive-closure :subClassOf))
+^traversal-fn
 (defn isa->subClassOf* [g context acc queue]
   [context
    (->> queue 
@@ -48,7 +49,8 @@
              :name #{{:value "Mary", :lang "en"}}},
             :likes {:isa #{:property}},
             :isa {:isa #{:property}},
-            :meat {:isa #{:food}, :subClassOf #{:consumable}},
+            :meat {:isa #{:food}},
+            :food {:subClassOf #{:consumable}},
             :coke {:isa #{:drink}},
             :drink {:subClassOf #{:consumable}},
             :consumable {:subClassOf #{:thing}},
@@ -75,7 +77,8 @@
              :name #{{:value "Mary", :lang "en"}}},
             :likes {:isa #{:property}},
             :isa {:isa #{:property}},
-            :meat {:isa #{:food}, :subClassOf #{:consumable}},
+            :meat {:isa #{:food}},
+            :food {:subClassOf #{:consumable}},
             :coke {:isa #{:drink}},
             :drink {:subClassOf #{:consumable}},
             :consumable {:subClassOf #{:thing}},
@@ -89,7 +92,8 @@
              :name #{{:value "Mary", :lang "en"}}},
             :likes {:isa #{:property}},
             :isa {:isa #{:property}},
-            :meat {:isa #{:food}, :subClassOf #{:consumable}},
+            :meat {:isa #{:food}},
+            :food {:subClassOf #{:consumable}},
             :coke {:isa #{:drink}},
             :drink {:subClassOf #{:consumable}},
             :consumable {:subClassOf #{:thing}},
@@ -104,7 +108,8 @@
              :name #{{:value "Mary", :lang "en"}}},
             :likes {:isa #{:property}},
             :isa {:isa #{:property}},
-            :meat {:isa #{:food}, :subClassOf #{:consumable}},
+            :meat {:isa #{:food}},
+            :food {:subClassOf #{:consumable}},
             :coke {:isa #{:drink}},
             :drink {:subClassOf #{:consumable}},
             :consumable {:subClassOf #{:thing}},
@@ -118,7 +123,8 @@
             :mary {:isa #{:person}, :likes #{:coke}},
             :likes {:isa #{:property}},
             :isa {:isa #{:property}},
-            :meat {:isa #{:food}, :subClassOf #{:consumable}},
+            :meat {:isa #{:food}},
+            :food {:subClassOf #{:consumable}},
             :coke {:isa #{:drink}},
             :drink {:subClassOf #{:consumable}},
             :consumable {:subClassOf #{:thing}},
