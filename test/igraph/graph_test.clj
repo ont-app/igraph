@@ -25,6 +25,7 @@
 
 ^traversal-fn
 (def subClassOf* (transitive-closure :subClassOf))
+
 ^traversal-fn
 (defn isa->subClassOf* [g context acc queue]
   [context
@@ -169,7 +170,23 @@
 
     (is (= (unique [:just-me :no-theres-me-too!] first)
            :just-me))
-
+    
+    ;; specific to Graph, not part of IGraph
+    (is (= (set (vector-of-triples test-graph))
+           #{[:consumable :subClassOf :thing]
+             [:person :subClassOf :thing]
+             [:isa :isa :property]
+             [:drink :subClassOf :consumable]
+             [:likes :isa :property]
+             [:coke :isa :drink]
+             [:meat :isa :food]
+             [:food :subClassOf :consumable]
+             [:john :isa :person]
+             [:john :likes :meat]
+             [:john :name {:value "John", :lang "en"}]
+             [:mary :isa :person]
+             [:mary :likes :coke]
+             [:mary :name {:value "Mary", :lang "en"}]}))
     ))
 
 (deftest iset-test

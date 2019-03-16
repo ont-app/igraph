@@ -85,7 +85,24 @@ The core type declaration:
    (Graph. schema (with-meta contents {:triples-format :normal-form}))))
 
 
+(defn vector-of-triples [g]
+  "Returns (g) as #{[<s> <p> <o>]...}"
+  (letfn [(collect-o [s p triples o]
+            (conj triples [s p o])
+            )
+          (collect-p-o [s triples p]
+            (reduce (partial collect-o s p)
+                    triples
+                    (g s p)))
+          (collect-s-p-o [triples s]
+            (reduce (partial collect-p-o s)
+                    triples
+                    (keys (g s))))
 
+          ]
+    (reduce collect-s-p-o
+               []
+               (keys (g)))))
 
 
 (defmethod add-to-graph [Graph :normal-form] [g to-add]
@@ -258,6 +275,7 @@ Note:
     (make-graph
      :schema (.schema g1)
      :contents (reduce collect-s {} (shared-keys (g1) (g2))))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Support for simple queries
