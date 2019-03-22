@@ -87,7 +87,7 @@ This is informed by a multimethod dispatched on whether `p` is a function:
 
 The `p` argument is typically the identifier of a graph element in `g`, but it can also optionally be a traversal function which starts at `s` and accumulates a set of `o`s.
 
-See also the subclassOf* example in the discussion below describing the of the `Graph` type.
+See also the `subClassOf*` examples in the discussion below describing the of the `Graph` type.
 
 #### Multimethods to add/remove from graph
 There are multi-methods defined `add-to-graph` and `remove-from-graph`, dispatched on `alter-graph-dispatcher`
@@ -215,7 +215,7 @@ Traversal is done with a function that returns the accumulator and a possibly em
 
 The subClassOf* function defined above is equivalent to `transitive-closure`:
 ```
-(traverse g (transitive-closure :subClassOf) [] [:a])
+(traverse g (transitive-closure :subClassOf) [] [:drink])
 ->
 [:drink :consumable :thing]
 ```
