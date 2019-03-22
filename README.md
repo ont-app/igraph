@@ -80,6 +80,8 @@ Two of these functions involve specification of a `p` parameter:
 (g s p o) -> truthy.
 ```
 
+This is informed by a multimethod dispatched on whether `p` is a function:
+
 `(match-or-traverse g s p)` -> #{<o>...}
 `(match-or-traverse g s p o)` -> truthy
 
