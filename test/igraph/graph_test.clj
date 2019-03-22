@@ -67,6 +67,8 @@
            :meat))
     (is (= (test-graph :drink subClassOf* :consumable)
            :consumable))
+    (is (= (test-graph :drink subClassOf*)
+           #{:consumable :drink :thing}))
     ))
 
 (deftest subtract-test

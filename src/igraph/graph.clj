@@ -100,9 +100,11 @@ The core type declaration:
                     (keys (g s))))
 
           ]
-    (reduce collect-s-p-o
-               []
-               (keys (g)))))
+    (with-meta
+      (reduce collect-s-p-o
+              []
+              (keys (g)))
+      {:triples-format :vector-of-vectors})))
 
 
 (defmethod add-to-graph [Graph :normal-form] [g to-add]

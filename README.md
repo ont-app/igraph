@@ -42,41 +42,32 @@ There is a traversal regime based on a calling function called `traverse`:
     ... traversing `g` per the `traversal` function, starting with the
   first element of `queue`, possibly informed by `context`.
 
-This function will repeatedly call `traversal`, consuming the head of
-`queue`, aggregating into the accumulator `acc`, with each iteration,
-returning `acc` when `queue` is empty. Each execution of the traversal
-function should return an altered `queue`. This may just be the tail
-of the previous queue, but could also be for example reordered and
-truncated to define a beam search. Appending to the queue would
-implement a breadth-first search; prepending would implement a
-depth-first search.
-    
+This function will repeatedly call the `traversal` function until `queue` is empty, returning the final value for `acc`.
+
 The `context` argument is a map containing key-values which may inform the course of the traversal. These may include:
 
 - `:history` this will be set by `traverse`, and updated to hold all
   elements encountered in the course of the traversal. In order to
   avoid cycles, any element in the history will be skipped should it
   ever re-appear at the head of the queue.
-- `:skip?` (optional) a function (fn[x] ...) -> truthy (or a set)
-  which will override `:history`, specifiable at initialization or by
-  the traversal function during execution.
-- `:seek` (optional) a function (fn [context acc]...) -> <acc'>. If
+- `:skip?` (optional), a function (fn[x] ...) -> truthy (or a set)
+  which will override `:history`.
+- `:seek` (optional), a function (fn [context acc]...) -> <acc'>. If
   specified, this function will be called at the beginning of each
   traversal, and if truthy and non-empty the traversal will end
-  immediately with that value. If specified and the queue is empty,
-  the output of this function will be the value of the function.
+  immediately with that value.
 
 
 ##### Traversal functions
 A `traversal function` has the signature (fn [g context acc queue]...) -> [context' acc' queue'].
 
-The `context` argument can contain key/values specific to the
-traversal function can also be specified at initialization or as the
-output of the traversal function itself. This might for example be
-data that guides some kind of beam-search.
+The `context` argument is a map that acts as a blackboard reflecting the global state of the traversal. This might for example be data that guides some kind of beam-search. It should only hold values that become irrelevant after the traversal has completed.
+
+###### Transitive closure
 
 - `(trasitive-closure p)` -> (fn [g context acc to-visit] ...) -> [context' acc' queue'], 
-  a traversal argument to `traverse`.
+  
+  This returns a traversal function which starting with a `queue = [s]` will accumulate all `o` s.t. `s` is associated with `o` through zero or more `p` links.
 
 ###### As the `p` argument in accessors
 
@@ -92,17 +83,9 @@ Two of these functions involve specification of a `p` parameter:
 `(match-or-traverse g s p)` -> #{<o>...}
 `(match-or-traverse g s p o)` -> truthy
 
-IGraph defines a multi-method `match-or-traverse` dispatched on the
-output of `(p-dipatcher p) -> :match | :traverse.
+The `p` argument is typically the identifier of a graph element in `g`, but it can also optionally be a traversal function which starts at `s` and accumulates a set of `o`s.
 
-The `:match` method should simply imply the corresponding "get"
-function above, `:traverse` method will expect `p` to be a traversal
-function whose `acc` is a set of graph elements.
-
-Thus implementations of IGraph would typically define `invoke`
-involving `p` arguments using `match-or-traverse`.
-
-See also the examples in the `Graph` section below.
+See also the subclassOf* example in the discussion below describing the of the `Graph` type.
 
 #### Multimethods to add/remove from graph
 There are multi-methods defined `add-to-graph` and `remove-from-graph`, dispatched on `alter-graph-dispatcher`
@@ -121,8 +104,6 @@ these values when defining `add` and `subtract`.
 - `(normal-form? m)` -> true iff m is a map in normal form.
 
 
-The [source file](https://github.com/ont-app/igraph/blob/master/src/igraph/core.clj) has fairly explicit docstrings.
-
 ### ISet
 
 It may make sense for some implementations of IGraph also to implement
@@ -132,7 +113,7 @@ the basic set operations, defined in ISet:
 - `(difference g1 g2)` -> A new graph with triples in g1 not also in g2
 - `(intersection g1 g2)` -> A new graph with only triples shared in both graphs
 
-## Graph
+## The `Graph` type
 
 The Graph type is a very lightweight implementation of IGraph. The aim
 here, aside from demonstrating IGraph, is to add just one layer of
@@ -178,7 +159,6 @@ The `subjects` function will give you the subjects:
 (:john :mary :likes :isa :meat :coke :drink :food :consumable :person)
 ```
 
-
 Invoked without arguments gives you `normal form`:
 
 ```
@@ -219,31 +199,28 @@ Invoked with a subject and predicate gives you the set of objects:
 ```
 
 Traversal is done with a function that returns the accumulator and a possibly empty list of nodes in the graph still to visit...
-```
-(def g (add (make-graph) [[:a :subClassOf :b] 
-                          [:b :subClassOf :c]
-                          [:c :subClassOf :d]]))
 
+```
 (defn subClassOf* [g context acc to-visit]
    [context,
     (conj acc (first to-visit)),
     (concat (rest to-visit) (g (first to-visit) :isa))])
    
-(traverse g subClassOf* [] [:a])
+(traverse g subClassOf* [] [:drink])
 ->
-[:a :b :c :d]
+[:drink :consumable :thing]
 ```
 
 The subClassOf* function defined above is equivalent to `transitive-closure`:
 ```
 (traverse g (transitive-closure :subClassOf) [] [:a])
 ->
-[:a :b :c :d]
+[:drink :consumable :thing]
 ```
 
 A graph can be invoked with a subject and a traversal function as its
 `p` argument, which will give you the result of the traversal with a
-starting queue of [s]:
+starting queue of [s] (as a set):
 
 ```
 (def subClassOf* (transitive-closure :subClassOf))
@@ -253,6 +230,7 @@ starting queue of [s]:
 #{:consumable :drink :thing}
 
 ```
+
 
 If you're sure there's only going to be one object you can use the `unique` function:
 ```
@@ -306,7 +284,7 @@ We can also use traversal functions for the p argument:
   {:?super :drink, :?class :drink, :?likee :coke, :?liker :mary}}
 ```
 
-One subtracts from it like this (also returns new immutable object):
+One subtracts from a `Graph` like this (also returns new immutable object):
 ```
 (normal-form 
   (subtract 
@@ -342,7 +320,7 @@ One subtracts from it like this (also returns new immutable object):
 
 ```
 
-Graph also implements the `ISet` functions `union`, `difference` and `intersection`.
+`Graph` also implements the `ISet` functions `union`, `difference` and `intersection`.
 
 
 See also the  [test file](https://github.com/ont-app/igraph/blob/master/test/igraph/graph_test.clj).
