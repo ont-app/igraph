@@ -392,5 +392,29 @@ Informs p-dispatcher
   ([coll]
    (unique coll (fn [coll] (throw (Exception. (str "Non-unique: " coll)))))))
 
+(defn reduce-s-p-o [f acc g]
+  "Returns <acc'> s.t. (f acc s p o) -> <acc'> for every triple in <g>
+Where
+<f> := (fn [acc s p o] -> <acc'>
+<acc> is any value, an reduction accumlator
+<s> <p> <o> constitute a triple in <g>
+<g> implements IGraph
+"
+  (letfn [(collect-o [s p acc o]
+            (f acc s p o)
+            )
+          (collect-p-o [s acc p]
+            (reduce (partial collect-o s p)
+                    acc
+                    (g s p)))
+          (collect-s-p-o [acc s]
+            (reduce (partial collect-p-o s)
+                    acc
+                    (keys (g s))))
+          ]
+    (reduce collect-s-p-o
+            acc
+            (subjects g))))
+      
 
 

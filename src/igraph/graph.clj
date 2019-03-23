@@ -86,25 +86,13 @@ The core type declaration:
 
 
 (defn vector-of-triples [g]
-  "Returns (g) as #{[<s> <p> <o>]...}"
-  (letfn [(collect-o [s p triples o]
-            (conj triples [s p o])
-            )
-          (collect-p-o [s triples p]
-            (reduce (partial collect-o s p)
-                    triples
-                    (g s p)))
-          (collect-s-p-o [triples s]
-            (reduce (partial collect-p-o s)
-                    triples
-                    (keys (g s))))
-
-          ]
-    (with-meta
-      (reduce collect-s-p-o
-              []
-              (keys (g)))
-      {:triples-format :vector-of-vectors})))
+  "Returns (g) as [[<s> <p> <o>]...]"
+  (with-meta
+    (reduce-s-p-o
+     (fn [v s p o] (conj v [s p o]))
+     []
+     g)
+    {:triples-format :vector-of-vectors}))
 
 
 (defmethod add-to-graph [Graph :normal-form] [g to-add]
