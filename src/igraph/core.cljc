@@ -6,7 +6,17 @@ other basic clojure data structures such as maps and sequences.
   (:require [clojure.set :as set]
             ))
 
-           
+(def PERSISTENT-VECTOR-TYPE #?(:clj clojure.lang.PersistentVector
+                               :cljs cljs.core/PersistentVector))
+
+(def PERSISTENT-ARRAY-MAP #?(:clj clojure.lang.APersistentMap
+                             :cljs cljs.core/PersistentArrayMap))
+
+(def PERSISTENT-SET #?(:clj clojure.lang.APersistentSet
+                       :cljs cljs.core/PersistentHashSet
+                       ))
+
+
 (defprotocol IGraph
   "An abstraction for S-P-O graphs"
 
@@ -107,7 +117,7 @@ Where
   )
 
 
-(defprotocol ISet
+(defprotocol IGraphSet
   "Basic set operations between graphs."
   (union [g1 g2]
     "Returns an IGraph whose normal form contains all triples from g1 and g2"
@@ -128,12 +138,14 @@ Where
 (defn normal-form? 
   "Returns true iff <m> is in normal form for IGraph."
   [m]
-  (and (instance? clojure.lang.APersistentMap m)
+  (and (instance? PERSISTENT-ARRAY-MAP m)
        (or (empty? m)
            (let [p (m (first (keys m)))
                  o (p (first (keys p)))
                  ]
-             (instance? clojure.lang.APersistentSet o)))))
+             (instance? PERSISTENT-SET o)))))
+
+
 
 (defn triples-format 
   "Returns the value of (:triples-format (meta <triples-spec>)) or one of #{:vector :vector-of-vectors :normal-form <type>} inferred from the shape of <triples-spec>
@@ -150,9 +162,9 @@ Where
   [triples-spec]
   (or (:triples-format (meta triples-spec))
       ;; else there's no metadata...
-      (if (= (type triples-spec) clojure.lang.PersistentVector)
+      (if (= (type triples-spec) PERSISTENT-VECTOR-TYPE)
         (if (and (> (count triples-spec) 0)
-                 (= (type (triples-spec 0)) clojure.lang.PersistentVector))
+                 (= (type (triples-spec 0)) PERSISTENT-VECTOR-TYPE))
           :vector-of-vectors
           :vector)
         ;; else not a vector
@@ -276,7 +288,6 @@ Where
   [p]
   {:pre [(not (fn? p))] ;; direct matches only, no traversals
    }
-  ^:traversal-fn
   (fn transitive-closure-traversal [g context acc queue]
     [context,
      (conj acc (first queue)),
@@ -300,7 +311,6 @@ Where
   {:pre [(not (fn? p)) ;; direct matches only. No traversals
          ]
    }
-  ^:traversal-fn
   (fn link-traversal [g context acc queue]
     (let [s (first queue)]
       [context,
@@ -390,7 +400,11 @@ Informs p-dispatcher
        (on-ambiguity coll)
        (first coll))))
   ([coll]
-   (unique coll (fn [coll] (throw (Exception. (str "Non-unique: " coll)))))))
+   (unique coll (fn [coll]
+                  (let [error-msg (str "Non-unique: " coll)]
+                    #?(:clj (throw (Exception. error-msg))
+                       :cljs (js/Error. error-msg)
+                       ))))))
 
 (defn reduce-s-p-o [f acc g]
   "Returns <acc'> s.t. (f acc s p o) -> <acc'> for every triple in <g>

@@ -15,5 +15,6 @@ All notable changes to this project will be documented in this file. This change
 - A traverse function, with a utility to define transitive-closure.
 
 ## [0.1.4] - 2018-3-12
-
+### Added
 - P-arguments can now be traversal functions mapping s to a set of o's.
+- clj files are now cljc, and there are unit tests for cljs using doo

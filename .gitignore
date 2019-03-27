@@ -1,6 +1,10 @@
 /target
 /classes
 /checkouts
+/node_modules
+/out
+/resources
+
 pom.xml
 pom.xml.asc
 *.jar

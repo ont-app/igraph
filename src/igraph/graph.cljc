@@ -1,3 +1,5 @@
+
+
 (ns ^{:author "Eric D. Scott",
       :doc "Implementation of a simple graph type implementing IGraph.
 On typically adds to it with [[<s> <p> <o>]...].
@@ -24,8 +26,8 @@ The core type declaration:
   (invoke [g s] (get-p-o g s))
   (invoke [g s p] (match-or-traverse g s p))
   (invoke [g s p o] (match-or-traverse g s p o))
-  
-  ISet
+
+  IGraphSet
   (union [g1 g2] (add-to-graph g1 (g2)))
   (intersection [g1 g2] (get-intersection g1 g2))
   (difference [g1 g2] (remove-from-graph g1 (g2)))
@@ -34,46 +36,86 @@ The core type declaration:
 "}
     igraph.graph
   (:require [clojure.set :as set]
-            [igraph.core :refer :all]
-            )
-  #_(:gen-class))
+            [igraph.core
+             :refer
+             [
+              add
+              add-to-graph
+              ask
+              difference
+              get-o
+              get-p-o
+              intersection
+              invoke
+              match-or-traverse
+              normal-form
+              query
+              read-only?
+              reduce-s-p-o
+              remove-from-graph
+              subjects
+              subtract
+              traverse
+              triples-format
+              union
+              ]
+             ]
+            ))
 
 
 (declare query-graph) ;; defined below
 (declare get-intersection)
-
+(declare get-schema)
+(declare get-contents)
 
 (deftype Graph [schema contents]
   
-  IGraph
-  (normal-form [g] (.contents g)) 
-  (subjects [g] (keys (.contents g)))
-  (get-p-o [g s] (get (.contents g) s))
-  (get-o [g s p] (get-in (.contents g) [s p]))
-  (ask [g s p o] (get-in (.contents g) [s p o]))
+  igraph.core.IGraph
+  (normal-form [g] (get-contents g)) 
+  (subjects [g] (keys (get-contents g)))
+  (get-p-o [g s] (get (get-contents g) s))
+  (get-o [g s p] (get-in (get-contents g) [s p]))
+  (ask [g s p o] (get-in (get-contents g) [s p o]))
   (query [g q] (query-graph g q))
   (read-only? [g] false)
   (add [g to-add] (add-to-graph g to-add))
   (subtract [g to-subtract] (remove-from-graph g to-subtract))
   
-  clojure.lang.IFn
+  #?(:clj clojure.lang.IFn
+     :cljs cljs.core/IFn)
   (invoke [g] (normal-form g))
   (invoke [g s] (get-p-o g s))
   (invoke [g s p] (match-or-traverse g s p))
   (invoke [g s p o] (match-or-traverse g s p o))
   
-  ISet
+  igraph.core.IGraphSet
   (union [g1 g2] (add-to-graph g1 (g2)))
   (intersection [g1 g2] (get-intersection g1 g2))
   (difference [g1 g2] (remove-from-graph g1 (g2)))
   )
 
 
+(defn get-schema [g]
+  "Returns (.schema g) or (.-schema g) appropriate to clj/cljs"
+  #?(:clj
+     (.schema g)
+     :cljs
+     (.-schema g)))
+
+(defn get-contents [g]
+  "Returns (.contents g) or (.-contents g) appropriate to clj/cljs"
+  #?(:clj
+     (.contents g)
+     :cljs
+     (.-contents g)))
+  
+  
 (defn make-graph
   "Returns <graph>, intialized per optional <schema> and <contents>
   Where
-  <graph> is an instance of the `Graph` record, which implments `IGraph`, `Ifn` and `ISet`
-  <schema> is not presently used
+  <graph> is an instance of the `Graph` type, which implments `IGraph`, `Ifn` and `ISet`
+  <schema> is not presently used, but may be a useful place for app-specific
+    metadata
   <contents> is a normal-form representation of initial contents.
     see also igraph/normal-form.
   "
@@ -82,7 +124,8 @@ The core type declaration:
            contents {}}}]
    {:pre [(= (triples-format contents) :normal-form)]
     }
-   (Graph. schema (with-meta contents {:triples-format :normal-form}))))
+   (Graph. schema (with-meta contents {:triples-format :normal-form}))
+   ))
 
 
 (defn vector-of-triples [g]
@@ -110,10 +153,11 @@ The core type declaration:
               (-> {}
                   (integrate m1)
                   (integrate m2))))
-        ]
-  (make-graph
-   :schema (.schema g)
-   :contents (merge-tree (g) to-add))))
+          ]
+    (make-graph
+     :schema (get-schema g)
+     :contents (merge-tree (g) to-add))))
+
 
 (defmethod add-to-graph [Graph :vector-of-vectors] [g triples]
   "
@@ -131,14 +175,21 @@ Where <triples> := [<v> ....]
                                  (partition 2 (rest v))))
         ]
     (make-graph
-     :schema (.schema g)
-     :contents (reduce collect-vector (.contents g) triples))))
+     :schema (get-schema g)
+     :contents (reduce collect-vector (get-contents g) triples))))
 
 (defmethod add-to-graph [Graph :vector] [g triple]
   (assert (= (count triple) 3))
   (add-to-graph g [triple]))
 
-(defmethod add-to-graph [Graph clojure.lang.LazySeq] [g the-seq]
+
+
+(defmethod add-to-graph [Graph
+                         #?(:clj clojure.lang.LazySeq
+                            :cljs cljs.core/LazySeq
+                            )
+                         ]
+                         [g the-seq]
   (add-to-graph g (vec the-seq)))
 
 
@@ -197,7 +248,7 @@ Where
                         (shared-keys v1 v2)))))
           ]
     (make-graph
-     :schema (.schema g)
+     :schema (get-schema g)
      :contents (reduce (partial dissoc-shared-keys [])
                        (g)
                        (shared-keys (g) to-remove)))))
@@ -226,19 +277,19 @@ Note:
                                    (partition 2 (rest v))))))
         ]
     (make-graph
-     :schema (.schema g)
-     :contents (reduce collect-vector (.contents g) triples))))
+     :schema (get-schema g)
+     :contents (reduce collect-vector (get-contents g) triples))))
 
 (defmethod remove-from-graph [Graph :vector] [g to-remove]
   "Where
 <to-remove> may be [s] [s p] [s p o]
 "
   (assert (<= (count to-remove) 3))
-  (let [contents (-dissoc-in (.contents g) to-remove)
+  (let [contents (-dissoc-in (get-contents g) to-remove)
         ]
     (make-graph
-     :schema (.schema g)
-     :contents (-dissoc-in (.contents g)
+     :schema (get-schema g)
+     :contents (-dissoc-in (get-contents g)
                            to-remove))))
 
 
@@ -263,7 +314,7 @@ Note:
                   (shared-keys (g1 s) (g2 s))))
         ]
     (make-graph
-     :schema (.schema g1)
+     :schema (get-schema g1)
      :contents (reduce collect-s {} (shared-keys (g1) (g2))))))
 
 
@@ -354,9 +405,15 @@ Note:
     clause
   <spec> := [<p> <o>] derived from some graph pattern clause.
   "
-  [^Graph g
-   ^clojure.lang.PersistentArrayMap context
-   ^clojure.lang.PersistentVector next-p]
+  #?(:clj
+     [^Graph g
+      ^clojure.lang.PersistentArrayMap context
+      ^clojure.lang.PersistentVector next-p]
+     :cljs
+     [^Graph g
+      ^cljs.core/PersistentArrayMap context
+      ^cljs.core/PersistentVector next-p]
+     )
   (let [[p-spec o-spec] (:spec context)
         ]
     (if (not (-matches-spec? context p-spec next-p))
@@ -386,9 +443,14 @@ Note:
   <test> := (fn [next-s]) -> true if next-s cannot be excluded from matching
     in the current context.
   "
-  [^Graph g
-   ^clojure.lang.PersistentArrayMap context
-   next-s]
+  #?(:clj
+     [^Graph g
+      ^clojure.lang.PersistentArrayMap context
+      next-s]
+     :cljs
+     [^Graph g
+      ^cljs.core/PersistentArrayMap context
+      next-s])
   (let [[s-spec p-spec o-spec] (:spec context)
         ]
     (if (not (-matches-spec? context s-spec next-s))
@@ -429,9 +491,15 @@ Note:
   <var> names the subset of <s> <p> <o> for which (query-var? %) is true
   <value> is an element in <g> s.t. ((<var> <var-tests>) <value>)
   "
-  ([^Graph g
-    ^clojure.lang.PersistentVector clause
-    ^clojure.lang.PersistentArrayMap var-tests]
+  (#?(:clj
+      [^Graph g
+       ^clojure.lang.PersistentVector clause
+       ^clojure.lang.PersistentArrayMap var-tests]
+      :cljs
+      [^Graph g
+       ^cljs.core/PersistentVector clause
+       ^clojs.core/.PersistentArrayMap var-tests]
+      )
    (let [[s-spec p-spec o-spec] clause
          ]
      (map #(dissoc % :matched?)
@@ -439,7 +507,7 @@ Note:
                   (mapcat  (partial -s-p-o-matches g {:var-tests var-tests
                                                       :spec clause})
                            (if (query-var? s-spec)
-                             (keys (.contents g))
+                             (keys (get-contents g))
                              [s-spec]))))))
   ;; no var-tests specified
   ([g clause]
@@ -467,10 +535,16 @@ Note:
   <specified bindings> := #{<specified match>...} a subset of <matches> for which
     <var> was bound to <value> in previous clauses.
   "
-  [^Graph g
-   ^clojure.lang.PersistentArrayMap query-state
-   ^clojure.lang.PersistentArrayMap clause-state
-   ^clojure.lang.PersistentArrayMap match]
+  #?(:clj
+     [^Graph g
+      ^clojure.lang.PersistentArrayMap query-state
+      ^clojure.lang.PersistentArrayMap clause-state
+      ^clojure.lang.PersistentArrayMap match]
+     :cljs
+     [^Graph g
+      ^cljs.core/PersistentArrayMap query-state
+      ^cljs.core/PersistentArrayMap clause-state
+      ^cljs.core/PersistentArrayMap match])     
   (assoc clause-state
          :bindings
          (set/union
@@ -481,7 +555,8 @@ Note:
                               (map (fn [qvar]
                                      (-> query-state
                                          :specified ;; TODO consider change :specified to :history or :established-bindings
-                                         (.get-o qvar (qvar match))))
+                                         #_(.get-o qvar (qvar match))
+                                         (get-o qvar (qvar match))))
                                    (:shared-bound clause-state)))))
                                               
             ;;else the bindings in this clause have no precedent
@@ -501,7 +576,10 @@ Where
 Note: this is typically used to populate the 'specified' graph in 
   a query-state, which informs the matching process downstream.
   "
-  [^clojure.lang.PersistentArrayMap binding]
+  #?(:clj
+     [^clojure.lang.PersistentArrayMap binding]
+     :cljs
+     [^cljs.core/PersistentArrayMap binding])
   (let [triplify-var (fn [binding qvar]
                        [qvar (qvar binding) binding])
         ]
@@ -523,10 +601,15 @@ Note: this is typically used to populate the 'specified' graph in
   <specified matches> := #{<specified match>...} a subset of <matches> specified
     for <var> and <value>
   "
-  [^Graph g
-   ^clojure.lang.PersistentArrayMap query-state
-   ^clojure.lang.PersistentVector next-clause]
-  
+  #?(:clj
+     [^Graph g
+      ^clojure.lang.PersistentArrayMap query-state
+      ^clojure.lang.PersistentVector next-clause]
+     :cljs
+     [^Graph g
+      ^cljs.core/PersistentArrayMap query-state
+      ^cljs.core/PersistentVector next-clause])
+
   (let [
         initial-clause-state
         {
@@ -566,8 +649,12 @@ Note: this is typically used to populate the 'specified' graph in
   <binding> := {<var> <matching-value>, ...}
   <matching-value> matches <var> within <graph-pattern> applied to <g>
   "
-  [^Graph g
-   ^clojure.lang.PersistentVector graph-pattern]
+  #?(:clj
+     [^Graph g
+      ^clojure.lang.PersistentVector graph-pattern]
+     :cljs
+     [^Graph g
+      ^cljs.core/PersistentVector graph-pattern])
   (:bindings
    (reduce (partial -collect-clause-matches g)
            {}
