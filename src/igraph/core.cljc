@@ -403,16 +403,17 @@ Informs p-dispatcher
    (unique coll (fn [coll]
                   (let [error-msg (str "Non-unique: " coll)]
                     #?(:clj (throw (Exception. error-msg))
-                       :cljs (js/Error. error-msg)
+                       :cljs (throw (js/Error. error-msg))
                        ))))))
 
 (defn reduce-s-p-o [f acc g]
   "Returns <acc'> s.t. (f acc s p o) -> <acc'> for every triple in <g>
 Where
 <f> := (fn [acc s p o] -> <acc'>
-<acc> is any value, an reduction accumlator
+<acc> is any value, a reduction accumlator
 <s> <p> <o> constitute a triple in <g>
 <g> implements IGraph
+NOTE: C.f. reduce-k-v
 "
   (letfn [(collect-o [s p acc o]
             (f acc s p o)

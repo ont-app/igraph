@@ -168,12 +168,6 @@
     ))
 
 
-(defn erroneous-unique []
-  "Couldn't get (thrown?...) to work"
-  (try (ig/unique #{:just-me :no-theres-me-too!})
-       (catch :default e
-         :error)))
-
 (deftest utility-test
   (testing "Test the `unique` function"
     (is (= (ig/unique #{:just-me})
@@ -183,6 +177,8 @@
 
     (is (= erroneous-unique)
         :error)
+    
+    (is (thrown? js/Object (ig/unique #{:just-me :no-theres-me-too!})))
 
     (is (= (ig/unique [:just-me :no-theres-me-too!] first)
            :just-me))
