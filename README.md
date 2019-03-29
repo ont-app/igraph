@@ -40,14 +40,14 @@ Also a corresponding `invoke` to support `IFn` as follows
 
 #### Traversal
 
-There is a traversal regime based on a calling function called `traverse`:
+There is a traversal regime based on a calling function called `traverse`, which is somewhat analogous to `reduce`:
 
 - `(traverse g traversal context acc queue)` -> `acc`
 
     ... traversing `g` per the `traversal` function, starting with the
   first element of `queue`, possibly informed by `context`.
 
-This function will repeatedly call the `traversal` function until `queue` is empty, returning the final value for `acc`.
+This function will repeatedly call the `traversal` function until `queue` is empty, returning the final value for `acc`. Each call to the traversal function returns modified versions of `context`, `acc` and `queue`.
 
 The `context` argument is a map containing key-values which may inform the course of the traversal. These may include:
 
@@ -68,11 +68,19 @@ A `traversal function` has the signature (fn [g context acc queue]...) -> [conte
 
 The `context` argument is a map that acts as a blackboard reflecting the global state of the traversal. This might for example be data that guides some kind of beam-search. It should only hold values that become irrelevant after the traversal has completed.
 
-###### Transitive closure
+###### Utility: `transitive-closure`
 
 - `(trasitive-closure p)` -> (fn [g context acc to-visit] ...) -> [context' acc' queue'], 
   
   This returns a traversal function which starting with a `queue = [s]` will accumulate all `o` s.t. `s` is associated with `o` through zero or more `p` links.
+
+###### Utility: `traverse-link`
+
+- `(traverse-link p)` -> (fn [g context acc queue] ...) -> [context acc' []],
+
+The function returned by this call when called as a traversal will
+accumulate all `o` s.t. for all `s` in `queue`, (g s p o). This is is
+useful for example in specifying the first (<i>instance-of</i>) stage of a complex traversal `<i>x instance-of/subclass-of* y</i>`.
 
 ###### As the `p` argument in accessors
 
@@ -82,6 +90,7 @@ Two of these functions involve specification of a `p` parameter:
 
 ```
 (g s p) -> {<o>...}
+
 (g s p o) -> truthy.
 ```
 
@@ -111,10 +120,13 @@ these values when defining `add` and `subtract`.
 - `(normal-form? m)` -> true iff m is a map in normal form.
 
 
-### ISet
+- `(reduce-s-p-o f acc g) -> `acc'` s.t. `f` is called on each triple in `g`.
+Where `f` := `(fn [acc s p o]...) -> acc'`
+
+### IGraphSet
 
 It may make sense for some implementations of IGraph also to implement
-the basic set operations, defined in ISet:
+the basic set operations, defined in IGraphSet:
 
 - `(union g1 12)` -> A new graph with all triples from both graphs
 - `(difference g1 g2)` -> A new graph with triples in g1 not also in g2
