@@ -80,7 +80,7 @@ The `context` argument is a map that acts as a blackboard reflecting the global 
 
 The function returned by this call when called as a traversal will
 accumulate all `o` s.t. for all `s` in `queue`, (g s p o). This is is
-useful for example in specifying the first (<i>instance-of</i>) stage of a complex traversal `<i>x instance-of/subclass-of* y</i>`.
+useful for example in specifying the first (<i>instance-of</i>) stage of a complex traversal <i>x instance-of/subclass-of* y</i>.
 
 ###### As the `p` argument in accessors
 
