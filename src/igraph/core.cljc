@@ -279,7 +279,7 @@ Where
 (defn transitive-closure 
   "Returns <traversal> for chains of `p`.
 Where
-<traversal> := (fn [g acc queue]...) -> [<acc'> <queue'>], 
+<traversal> := (fn [g acc queue]...) -> [<context> <acc'> <queue'>], 
   s.t. <queue'> conj's all <o> s.t. (g <s> <p> <o>).  
   A traversal function argument for the `traverse` function .
 <p> is a predicate, typcially an element of <g>

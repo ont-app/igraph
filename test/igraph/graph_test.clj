@@ -159,6 +159,9 @@
              {:?super :consumable, :?class :drink, :?likee :coke, :?liker :mary}
              {:?super :consumable, :?class :food, :?likee :meat, :?liker :john}
              {:?super :drink, :?class :drink, :?likee :coke, :?liker :mary}}))
+    (is (= (query test-graph
+                  [[:?not-there :no-relation :nothing-to-see-here]])
+           #{}))
     ))
 
 

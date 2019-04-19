@@ -178,9 +178,10 @@ Where <triples> := [<v> ....]
      :schema (get-schema g)
      :contents (reduce collect-vector (get-contents g) triples))))
 
-(defmethod add-to-graph [Graph :vector] [g triple]
-  (assert (= (count triple) 3))
-  (add-to-graph g [triple]))
+(defmethod add-to-graph [Graph :vector] [g triple-spec]
+  (if (empty? triple-spec)
+    g
+    (add-to-graph g [triple-spec])))
 
 
 
@@ -189,8 +190,10 @@ Where <triples> := [<v> ....]
                             :cljs cljs.core/LazySeq
                             )
                          ]
-                         [g the-seq]
-  (add-to-graph g (vec the-seq)))
+  [g the-seq]
+  (if (empty? the-seq)
+    g
+    (add-to-graph g (vec the-seq))))
 
 
 (defn- -dissoc-in [map-or-set path]
@@ -655,9 +658,10 @@ Note: this is typically used to populate the 'specified' graph in
      :cljs
      [^Graph g
       ^cljs.core/PersistentVector graph-pattern])
-  (:bindings
-   (reduce (partial -collect-clause-matches g)
-           {}
-           graph-pattern)))
+  (or (:bindings
+       (reduce (partial -collect-clause-matches g)
+               {}
+               graph-pattern))
+      #{}))
 
        
