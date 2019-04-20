@@ -250,11 +250,13 @@ Where
                         acc
                         (shared-keys v1 v2)))))
           ]
-    (make-graph
-     :schema (get-schema g)
-     :contents (reduce (partial dissoc-shared-keys [])
-                       (g)
-                       (shared-keys (g) to-remove)))))
+    (if (empty? to-remove)
+      g
+      (make-graph
+       :schema (get-schema g)
+       :contents (reduce (partial dissoc-shared-keys [])
+                         (g)
+                         (shared-keys (g) to-remove))))))
 
 (defmethod remove-from-graph [Graph :vector-of-vectors] [g triples]
   "
@@ -279,21 +281,25 @@ Note:
                                    acc
                                    (partition 2 (rest v))))))
         ]
-    (make-graph
-     :schema (get-schema g)
-     :contents (reduce collect-vector (get-contents g) triples))))
+    (if (empty? triples)
+      g
+      (make-graph
+       :schema (get-schema g)
+       :contents (reduce collect-vector (get-contents g) triples)))))
 
 (defmethod remove-from-graph [Graph :vector] [g to-remove]
   "Where
 <to-remove> may be [s] [s p] [s p o]
 "
-  (assert (<= (count to-remove) 3))
-  (let [contents (-dissoc-in (get-contents g) to-remove)
-        ]
-    (make-graph
-     :schema (get-schema g)
-     :contents (-dissoc-in (get-contents g)
-                           to-remove))))
+  (if (empty? to-remove)
+    g
+    (do
+      (let [contents (-dissoc-in (get-contents g) to-remove)
+            ]
+        (make-graph
+         :schema (get-schema g)
+         :contents (-dissoc-in (get-contents g)
+                               to-remove))))))
 
 
 

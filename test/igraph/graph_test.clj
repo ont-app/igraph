@@ -134,6 +134,11 @@
             :person {:subClassOf #{:thing}}}
            
            ))
+    (is (= (add test-graph [])
+           test-graph))
+
+    (is (= (subtract test-graph [])
+           test-graph))
     ))
 
 (deftest query-test
