@@ -62,6 +62,9 @@ The core type declaration:
              ]
             ))
 
+(defn make-error [msg]
+  #?(:clj (Exception. msg)
+     :cljs (js/Error msg)))
 
 (declare query-graph) ;; defined below
 (declare get-intersection)
@@ -158,6 +161,12 @@ The core type declaration:
      :schema (get-schema g)
      :contents (merge-tree (g) to-add))))
 
+(defn triple-check [v]
+  "Throws and error when v is not formatted properly
+TODO: replace with a spec regime.
+"
+  (when-not (odd? (count v))
+    (throw (make-error (str "Non-odd count " (count v) " in " v)))))
 
 (defmethod add-to-graph [Graph :vector-of-vectors] [g triples]
   "
@@ -169,7 +178,7 @@ Where <triples> := [<v> ....]
                                     [s p]
                                     #(conj (set %) o)))                       
         collect-vector (fn [acc v]
-                         (assert (odd? (count v)))
+                         (triple-check v)
                          (reduce (partial collect-triple (first v))
                                  acc
                                  (partition 2 (rest v))))
@@ -276,7 +285,7 @@ Note:
                            (-dissoc-in acc v)
                          ;; else this specifies one or more triples...
                          (let []
-                           (assert (odd? (count v)))
+                           (triple-check v)
                            (reduce (partial remove-triple (first v))
                                    acc
                                    (partition 2 (rest v))))))
