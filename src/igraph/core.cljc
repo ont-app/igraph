@@ -6,16 +6,6 @@ other basic clojure data structures such as maps and sequences.
   (:require [clojure.set :as set]
             ))
 
-(def PERSISTENT-VECTOR-TYPE #?(:clj clojure.lang.PersistentVector
-                               :cljs cljs.core/PersistentVector))
-
-(def PERSISTENT-ARRAY-MAP #?(:clj clojure.lang.APersistentMap
-                             :cljs cljs.core/PersistentArrayMap))
-
-(def PERSISTENT-SET #?(:clj clojure.lang.APersistentSet
-                       :cljs cljs.core/PersistentHashSet
-                       ))
-
 
 (defprotocol IGraph
   "An abstraction for S-P-O graphs"
@@ -138,12 +128,12 @@ Where
 (defn normal-form? 
   "Returns true iff <m> is in normal form for IGraph."
   [m]
-  (and (instance? PERSISTENT-ARRAY-MAP m)
+  (and (map? m) 
        (or (empty? m)
            (let [p (m (first (keys m)))
                  o (p (first (keys p)))
                  ]
-             (instance? PERSISTENT-SET o)))))
+             (set? o)))))
 
 
 
@@ -162,9 +152,9 @@ Where
   [triples-spec]
   (or (:triples-format (meta triples-spec))
       ;; else there's no metadata...
-      (if (= (type triples-spec) PERSISTENT-VECTOR-TYPE)
+      (if (vector? triples-spec)
         (if (and (> (count triples-spec) 0)
-                 (= (type (triples-spec 0)) PERSISTENT-VECTOR-TYPE))
+                 (vector? (triples-spec 0)))
           :vector-of-vectors
           :vector)
         ;; else not a vector
