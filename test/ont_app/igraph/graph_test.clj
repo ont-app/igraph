@@ -1,7 +1,7 @@
-(ns igraph.graph-test
+(ns ont-app.igraph.graph-test
   (:require [clojure.test :refer :all]
-            [igraph.core :refer :all]
-            [igraph.graph :refer :all]
+            [ont-app.igraph.core :refer :all]
+            [ont-app.igraph.graph :refer :all]
             ))
 
 (def test-graph (add (make-graph)

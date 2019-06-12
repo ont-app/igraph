@@ -1,10 +1,10 @@
-(ns igraph.graph-test
+(ns ont-app.igraph.graph-test
   (:require [cljs.test :refer-macros [async deftest is testing]]
-            [igraph.core :as ig]
+            [ont-app.igraph.core :as ig]
             ;; :refer [unique normal-form
             ;;                      add
             ;;                      transitive-closure]]
-            [igraph.graph :as g] ;;:refer [make-graph]]
+            [ont-app.igraph.graph :as g] ;;:refer [make-graph]]
             ))
 
 ;; (def test-graph (ig/add (g/make-graph) [[:a :b :c]]))

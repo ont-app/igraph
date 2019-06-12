@@ -2,7 +2,7 @@
       :doc "Abstractions over a graph object, intended to sit alongside the 
 other basic clojure data structures such as maps and sequences.
 "}
-    igraph.core
+    ont-app.igraph.core
   (:require [clojure.set :as set]
             ))
 

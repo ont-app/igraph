@@ -16,6 +16,14 @@ With snapshot
 ```
 [ont-app/igraph "0.1.4-SNAPSHOT"]
 ```
+Require thus:
+```
+(:require 
+  [ont-app.igraph.core] ;; for the IGraph protocol and related stuff
+  [ont-app.igraph.graph] ;; for the Graph implementation of IGraph
+  )
+           
+```
 
 ### IGraph
 The `IGraph` protocol specifies the following functions:
@@ -104,12 +112,12 @@ The `p` argument is typically the identifier of a graph element in `g`, but it c
 See also the `subClassOf*` examples in the discussion below describing the of the `Graph` type.
 
 #### Multimethods to add/remove from graph
-There are multi-methods defined `add-to-graph` and `remove-from-graph`, dispatched on `alter-graph-dispatcher`
+There are multi-methods defined `add-to-graph` and `remove-from-graph`, dispatched on `triples-format`
 
 ```
-(alter-graph-dispatcher g to-add-or-remove)
+(triples-format g to-add-or-remove)
 -> 
-One of :normal-form, :vector, :vector-of-vectors, or the type of `to-add-or-remove`
+;; One of `:normal-form`, `:vector`, `:vector-of-vectors`, or defaulting to the type of `to-add-or-remove`
 ```
 
 Implementations of IGraph will typically define methods for each of
@@ -143,7 +151,7 @@ To create:
 ```
 (make-graph)
 -> 
-#object[igraph.graph.Graph 0x67e46c69 "igraph.graph.Graph@67e46c69"]
+#object[ont-app.igraph.graph.Graph 0x67e46c69 "ont-app.igraph.graph.Graph@67e46c69"]
 ```
 
 One adds to it like this (returns a new immutable object):
@@ -168,7 +176,7 @@ One adds to it like this (returns a new immutable object):
    [:person :subClassOf :thing]
   ])))
 ->
-#object[igraph.graph.Graph 0x58b96f62 "igraph.graph.Graph@58b96f62"]
+#object[ont-app.igraph.graph.Graph 0x58b96f62 "ont-app.igraph.graph.Graph@58b96f62"]
 ```
 
 The `subjects` function will give you the subjects:

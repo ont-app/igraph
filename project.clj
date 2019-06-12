@@ -7,7 +7,7 @@
                  [org.clojure/clojurescript "1.9.227"]
                  ]
 
-  ;; :main ^:skip-aot igraph.core
+  ;; :main ^:skip-aot ont-app.igraph.core
   :target-path "target/%s"
   :plugins [[lein-codox "0.10.6"]
             [lein-cljsbuild "1.1.7"
@@ -21,7 +21,7 @@
    {:test {:source-paths ["src" "cljs-test"]
            :compiler {:output-to "resources/test/compiled.js"
                       ;; entry point for doo-runner:
-                      :main igraph.browser ;; at cljs-test/igraph/browser.cljs
+                      :main ont-app.igraph.browser ;; at cljs-test/igraph/browser.cljs
                       :optimizations :none
                       :warnings {:bad-method-signature false}
                       }}}
