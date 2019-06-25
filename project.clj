@@ -5,7 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.227"]
-                 [com.taoensso/timbre "4.10.0"]
+                 [lein-doo "0.1.10"]
                  ]
   
   ;; :main ^:skip-aot ont-app.igraph.core
@@ -18,7 +18,7 @@
   :cljsbuild
   {:builds
    ;; for testing the cljs incarnation
-   ;; run with 'lein doo firefox test', or swap in some other browser
+   ;; run with 'lein doo firefox test once' or swap in some other browser
    {:test {:source-paths ["src" "cljs-test"]
            :compiler {:output-to "resources/test/compiled.js"
                       ;; entry point for doo-runner:

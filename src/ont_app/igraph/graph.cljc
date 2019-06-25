@@ -36,7 +36,6 @@ The core type declaration:
 "}
     ont-app.igraph.graph
   (:require [clojure.set :as set]
-            [taoensso.timbre :as log]
             [ont-app.igraph.core
              :refer
              [
@@ -65,9 +64,6 @@ The core type declaration:
             ))
 
 
-(defn make-error [msg]
-  #?(:clj (Exception. msg)
-     :cljs (js/Error msg)))
 
 (declare query-graph) ;; defined below
 (declare get-intersection)
@@ -86,6 +82,7 @@ The core type declaration:
   (read-only? [g] false)
   (add [g to-add] (add-to-graph g to-add))
   (subtract [g to-subtract] (remove-from-graph g to-subtract))
+
   
   #?(:clj clojure.lang.IFn
      :cljs cljs.core/IFn)
@@ -100,6 +97,9 @@ The core type declaration:
   (difference [g1 g2] (remove-from-graph g1 (g2)))
   )
 
+(defn make-error [msg]
+  #?(:clj (Exception. msg)
+     :cljs (js/Error msg)))
 
 (defn get-schema [g]
   "Returns (.schema g) or (.-schema g) appropriate to clj/cljs"
@@ -114,6 +114,12 @@ The core type declaration:
      (.contents g)
      :cljs
      (.-contents g)))
+
+(def cljc-lazy-seq  #?(:clj clojure.lang.LazySeq
+                       :cljs cljs.core/LazySeq
+                       ))
+
+;; NO READER MACROS BELOW THIS POINT
   
   
 (defn make-graph
@@ -196,12 +202,7 @@ Where <triples> := [<v> ....]
     (add-to-graph g [triple-spec])))
 
 
-
-(defmethod add-to-graph [Graph
-                         #?(:clj clojure.lang.LazySeq
-                            :cljs cljs.core/LazySeq
-                            )
-                         ]
+(defmethod add-to-graph [Graph cljc-lazy-seq]
   [g the-seq]
   (if (empty? the-seq)
     g
@@ -343,9 +344,9 @@ Note:
 ;;; Support for simple queries
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                  
-(defn query-var?
-  "Returns true iff <spec> is a query variable (symbol whose name
-  starts with ?)
+(defn kw-starts-with-?
+  "Returns true iff <spec> is a symbol whose name
+  starts with ?. Default for query-var? parameter
   "
   [spec]
   (and (keyword? spec)
@@ -385,7 +386,7 @@ Note:
 (defn- -collect-p-o-matches
   "Returns <matches>' for <g> in <context> given <next-p>
   Where
-  <matches> := [<match> ...]
+  <matches> := #{<match> ...}
   <match> := {<var> <value>, ...}
   <var> is a variable bound to either :s :p  or :o in <context>
   <value> is a value associated with <var> in <g>
@@ -397,17 +398,10 @@ Note:
                     <var> :candidate <set of candidates>
   <next-p> is either a graph element or a traversal function
   "
-  #?(:clj
-     [^Graph g
-      ^Graph context
-      matches
-      next-p]
-     :cljs
-     [^Graph g
-      ^Graph context
-      matches
-      next-p]
-     )
+  [^Graph g ^Graph context matches next-p]
+  {:pre [(set? matches)
+         ]
+   }
   (let [o-candidates (context :o :candidate)
         ;; ... bound to the <o> in previous clauses, or nil
         qualify-os (fn [os]
@@ -445,7 +439,7 @@ Note:
                            context)))
               matches
               ;; match the objects for <s> and <next-p>
-              (qualify-os (g (unique (context :s :value)) next-p)
+              (qualify-os (g (unique (context :s :value)) next-p))))))
 
                            
                 
@@ -464,17 +458,10 @@ Note:
                     :s|:p|:o :candidate <set of candidates>  
 
   "
-  #?(:clj
-     [^Graph g
-      ^Graph context
-      matches
-      next-s]
-     :cljs
-     [^Graph g
-      ^Graph context
-      matches
-      next-s])
-  (let-fn [(qualify-ps
+  [^Graph g ^Graph context matches next-s]  
+  {:pre [(set? matches)]
+   }
+  (letfn [(qualify-ps
             [ps]
             ;; limits ps to specified candidates for p, if they exist
             (if-let [candidates (context :p :candidate)]
@@ -497,13 +484,15 @@ Note:
               (context :p :value)
               ;; else p is a graph element
               (qualify-ps (set (keys (g next-s))))))))
-  
+
+
 (defn- -query-clause-matches
-  "Returns <matches> for <clause> posed against <g> 
+  "Returns <matches> for `clause` posed against `g` in `query-context`
   Where
   <matches> := [<match> ...]
   <clause> :=[<s-spec> <p-spec> <o-spec>], a line from a simple query
   <g> is an instance of Graph.
+  <query-context> := {:query-var? ..., ...}
   <match> := { <var> <value>, ...}
   <s-spec> and <o-spec> are either variables or graph elements to match in
     the graph pattern
@@ -512,88 +501,81 @@ Note:
     (traverse g p #{} s) -> #{<o> ....}
   <var> names the subset of <s> <p> <o> for which (query-var? %) is true
   <value> is an element in <g> which matches some <var> in <clause>
+  <query-var?> := (fn [var]...)  -> true iff <var> is a variable.
   "
-  (#?(:clj
-      [^Graph g
-       query-context
-       ^clojure.lang.PersistentVector clause
-       ]
-      :cljs
-      [^Graph g
-       query-context
-       ^cljs.core/PersistentVector clause
-       ]
-      )
-   {:pre [(= (count clause) 3)]
-    }
-   (let [[s-spec p-spec o-spec] clause
-         candidates-for (fn [q-var]
-                          ;; returns the set of values already bound
-                          ;; to any var upstream the current clause
-                          ;; must bind to a subset of these
-                          (if-let [cs (-> query-context
-                                          :specified
-                                          (q-var)
-                                          (keys))]
-                            (set cs)))
+  [^Graph g ^Graph query-context clause]
+  {:pre [(map? query-context)
+         (= (count clause) 3)]
+   }
+  (let [
+        [s-spec p-spec o-spec] clause
+        query-var? (:query-var? query-context)
+        candidates-for (fn [q-var]
+                         ;; returns the set of values already bound
+                         ;; to any var upstream the current clause
+                         ;; must bind to a subset of these
+                         (if-let [cs (-> query-context
+                                         :specified
+                                         (q-var)
+                                         (keys))]
+                           (set cs)))
 
-                            
-         add-candidates (fn [c spo q-var]
-                          ;; Updates context <c> s.t. spo *may* have a set of
-                          ;; candidate bindings.
-                          (let [candidates
-                                (candidates-for q-var)]
-                            (if (and candidates (not (empty? candidates)))
-                              (add c {spo {:candidate candidates}})
-                              c)))
+        
+        add-candidates (fn [c spo q-var]
+                         ;; Updates context <c> s.t. spo *may* have a set of
+                         ;; candidate bindings.
+                         (let [candidates
+                               (candidates-for q-var)]
+                           (if (and candidates (not (empty? candidates)))
+                             (add c {spo {:candidate candidates}})
+                             c)))
 
-         add-var-context (fn [c spo q-var]
-                           ;; updates context <c> s.t. variable bindings
-                           ;; for s p or o are accounted for
-                           (-> c
-                               (add [spo :bound-to q-var])
-                               (add-candidates spo q-var)))
+        add-var-context (fn [c spo q-var]
+                          ;; updates context <c> s.t. variable bindings
+                          ;; for s p or o are accounted for
+                          (-> c
+                              (add [spo :bound-to q-var])
+                              (add-candidates spo q-var)))
+        
+        add-graph-element-context (fn [c spo element]
+                                    ;; updates the context for the case
+                                    ;; where s p or o is a graph element
+                                    ;; -- or maybe a traversal fn in the case
+                                    ;; of p
+                                    (-> c
+                                        (add [[spo :value element]
+                                              [spo :candidate element]
+                                              ]
+                                             )))
+        update-clause-context (fn [c spo spec]
+                                ;; updates the context appropriately
+                                ;; for either a variable or a graph element
+                                (cond->
+                                    c
+                                  (query-var? spec)
+                                  (add-var-context spo spec),
                                   
-         add-graph-element-context (fn [c spo element]
-                                     ;; updates the context for the case
-                                     ;; where s p or o is a graph element
-                                     ;; -- or maybe a traversal fn in the case
-                                     ;; of p
-                                     (-> c
-                                         (add [[spo :value element]
-                                               [spo :candidate element]
-                                               ]
-                                               )))
-         update-clause-context (fn [c spo spec]
-                                 ;; updates the context appropriately
-                                 ;; for either a variable or a graph element
-                                 (cond->
-                                     c
-                                   (query-var? spec)
-                                   (add-var-context spo spec),
-                                   
-                                   (not (query-var? spec))
-                                   (add-graph-element-context spo spec)))
+                                  (not (query-var? spec))
+                                  (add-graph-element-context spo spec)))
 
-         clause-context (-> (make-graph)
-                            ;; Updates the context for s p and o
-                            (update-clause-context :s s-spec)
-                            (update-clause-context :p p-spec)
-                            (update-clause-context :o o-spec))
-                          
-         ]
-     (reduce (partial -collect-s-p-o-matches
-                      g
-                      clause-context)
-             #{}
-             ;; reducing over the set of subjects associable
-             ;; with <s>.
-             (if (query-var? s-spec)
-               (or (candidates-for s-spec)
-                   (subjects g)) ;; Expensive for large graphs
-               ;; TODO: consider introducing an indexing facility
-               [s-spec])))))
-
+        clause-context (-> (make-graph)
+                           ;; Updates the context for s p and o
+                           (update-clause-context :s s-spec)
+                           (update-clause-context :p p-spec)
+                           (update-clause-context :o o-spec))
+        
+        ]
+    (reduce (partial -collect-s-p-o-matches
+                     g
+                     clause-context)
+            #{}
+            ;; reducing over the set of subjects associable
+            ;; with <s>.
+            (if (query-var? s-spec)
+              (or (candidates-for s-spec)
+                  (subjects g)) ;; Expensive for large graphs
+              ;; TODO: consider introducing an indexing facility
+              [s-spec]))))
 
 (defn- -collect-clause-match
   "Returns [<match>...] for `context` and `match`
@@ -620,16 +602,12 @@ Note:
   <specified bindings> := #{<specified match>...} a subset of <matches> for which
     <var> was bound to <value> in previous clauses.
   "
-  #?(:clj
-     [^Graph g
-      ^clojure.lang.PersistentArrayMap query-state
-      ^clojure.lang.PersistentArrayMap clause-state
-      ^clojure.lang.PersistentArrayMap match]
-     :cljs
-     [^Graph g
-      ^cljs.core/PersistentArrayMap query-state
-      ^cljs.core/PersistentArrayMap clause-state
-      ^cljs.core/PersistentArrayMap match])
+  [query-state clause-state match]
+  {:pre [(map? query-state)
+         (map? clause-state)
+         (map? match)
+         ]
+   }
   (assoc clause-state
          :bindings
          (set/union
@@ -639,8 +617,7 @@ Note:
                       (reduce set/intersection
                               (map (fn [qvar]
                                      (-> query-state
-                                         :specified ;; TODO consider change :specified to :history or :established-bindings
-                                         #_(.get-o qvar (qvar match))
+                                         :specified 
                                          (get-o qvar (qvar match))))
                                    (:shared-bound clause-state)))))
                                               
@@ -652,19 +629,19 @@ Note:
               #{match})))))
 
 
-(defn- -triplify-binding [binding]
-  "Returns [[<var> <value> <binding>]...] for <binding> 
+(defn- -triplify-binding 
+  "Returns [[<var> <value> <binding>]...] for `binding`, given `query-var?`
 Where
-<binding> := {<var> <value> ...}
-<var> is a query-var
-<value> is typically a value bound to <var> in some query match
-NOTE: this is typically used to populate the 'specified' graph in 
+  <binding> := {<var> <value> ...}
+  <query-var?> := (fn [var] ...) -> true iff <var> is a variable.
+  <var> is a query-var
+  <value> is typically a value bound to <var> in some query match
+  NOTE: this is typically used to populate the 'specified' graph in 
   a query-state, which informs the matching process downstream.
   "
-  #?(:clj
-     [^clojure.lang.PersistentArrayMap binding]
-     :cljs
-     [^cljs.core/PersistentArrayMap binding])
+  [query-var? binding]
+  {:pre [(map? binding)]
+   }
   (let [triplify-var (fn [binding qvar]
                        [qvar (qvar binding) binding])
         ]
@@ -689,21 +666,15 @@ NOTE: this is typically used to populate the 'specified' graph in
   <specified matches> := #{<specified match>...} a subset of <matches> containing
     a binding for <var> and <value>
   "
-  #?(:clj
-     [^Graph g
-      ^clojure.lang.PersistentArrayMap query-state
-      ^clojure.lang.PersistentVector next-clause]
-     :cljs
-     [^Graph g
-      ^cljs.core/PersistentArrayMap query-state
-      ^cljs.core/PersistentVector next-clause])
-  {:pre [(vector? next-clause)]
+  [^Graph g query-state next-clause]
+  {:pre [(map? query-state)
+         (vector? next-clause)
+         (= (count next-clause) 3)]
    }
-
   (if-not (:viable? query-state)
     query-state
     ;; else the query is still viable
-    (let [
+    (let [query-var? (:query-var? query-state)
           initial-clause-state
           {
            ;; Collect all the variables in this clause which are shared
@@ -721,7 +692,7 @@ NOTE: this is typically used to populate the 'specified' graph in
           
           ]
       (let [clause-state 
-            (reduce (partial -collect-clause-match g query-state)
+            (reduce (partial -collect-clause-match query-state)
                     initial-clause-state
                     (-query-clause-matches g query-state next-clause))
             ]
@@ -729,7 +700,8 @@ NOTE: this is typically used to populate the 'specified' graph in
           (assoc query-state
                  :bindings bindings
                  :specified (add (make-graph)
-                                 (mapcat -triplify-binding
+                                 (mapcat (partial -triplify-binding
+                                                  query-var?)
                                          (:bindings clause-state))))
           (assoc query-state
                  :viable? false
@@ -747,18 +719,19 @@ NOTE: this is typically used to populate the 'specified' graph in
   <binding> := {<var> <matching-value>, ...}
   <matching-value> matches <var> within <graph-pattern> applied to <g>
   "
-  #?(:clj
-     [^Graph g
-      ^clojure.lang.PersistentVector graph-pattern]
-     :cljs
-     [^Graph g
-      ^cljs.core/PersistentVector graph-pattern])
-
+  ([^Graph g graph-pattern query-var?]
+  {:pre [(vector? graph-pattern)
+         (vector? (graph-pattern 0))]
+   }
   (or (:bindings
        (reduce (partial -collect-clause-matches g)
-               {:viable? true}
+               {:viable? true
+                :query-var? query-var?
+                }
                graph-pattern))
       #{}))
+  ([^Graph g graph-pattern]
+   (query-graph g graph-pattern kw-starts-with-?)))
 
        
 (comment
