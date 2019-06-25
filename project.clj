@@ -5,8 +5,9 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.227"]
+                 [com.taoensso/timbre "4.10.0"]
                  ]
-
+  
   ;; :main ^:skip-aot ont-app.igraph.core
   :target-path "target/%s"
   :plugins [[lein-codox "0.10.6"]
