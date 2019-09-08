@@ -1,10 +1,16 @@
 (ns ont-app.igraph.graph-test
-  (:require [clojure.test :refer :all]
-            [ont-app.igraph.core :refer :all]
-            [ont-app.igraph.graph :refer :all]
-            ))
+  (:require
+   #?(:cljs [cljs.test :refer-macros [async deftest is testing]]
+      :clj [clojure.test :refer :all])
+   [ont-app.igraph.core :as ig]
+   ;; :refer [unique normal-form
+   ;;                      add
+   ;;                      transitive-closure]]
+   [ont-app.igraph.graph :as g] ;;:refer [make-graph]]
+   ))
 
-(def test-graph (add (make-graph)
+;; (def test-graph (ig/add (g/make-graph) [[:a :b :c]]))
+(def test-graph (ig/add (g/make-graph)
                      [[:john :isa :person]
                       [:john :likes :meat]
                       [:john :name {:value "John" :lang "en"}]
@@ -24,17 +30,19 @@
                       ]))
 
 ^traversal-fn
-(def subClassOf* (transitive-closure :subClassOf))
+(def subClassOf* (ig/transitive-closure :subClassOf))
 
 ^traversal-fn
 (defn isa->subClassOf* [g context acc queue]
   [context
    (->> queue 
-        (traverse g (traverse-link :isa) (assoc (dissoc context :seek)
-                                                :phase :isa) #{})
+        (ig/traverse g (ig/traverse-link :isa)
+                     (assoc (dissoc context :seek)
+                            :phase :isa) #{})
         vec
-        (traverse g (transitive-closure :subClassOf) (assoc context :phase :sc)
-                  #{}))
+        (ig/traverse g (ig/transitive-closure :subClassOf)
+                     (assoc context :phase :sc)
+                     #{}))
    []])
 
 (deftest invoke-test
@@ -73,7 +81,7 @@
 
 (deftest subtract-test
   (testing "Variations on subtract"
-    (is (= (normal-form (subtract test-graph [:john]))
+    (is (= (ig/normal-form (ig/subtract test-graph [:john]))
            {:mary
             {:isa #{:person},
              :likes #{:coke},
@@ -87,7 +95,7 @@
             :consumable {:subClassOf #{:thing}},
             :person {:subClassOf #{:thing}}}
            ))
-    (is (= (normal-form (subtract test-graph [:john :likes]))
+    (is (= (ig/normal-form (ig/subtract test-graph [:john :likes]))
            {:john {:isa #{:person}, :name #{{:value "John", :lang "en"}}},
             :mary
             {:isa #{:person},
@@ -103,7 +111,7 @@
             :person {:subClassOf #{:thing}}}
            ))
 
-    (is (= (normal-form (subtract test-graph [:john :likes :meat]))
+    (is (= (ig/normal-form (ig/subtract test-graph [:john :likes :meat]))
            {:john {:isa #{:person}, :name #{{:value "John", :lang "en"}}},
             :mary
             {:isa #{:person},
@@ -118,7 +126,7 @@
             :consumable {:subClassOf #{:thing}},
             :person {:subClassOf #{:thing}}}
            ))
-    (is (= (normal-form (subtract test-graph [[:john
+    (is (= (ig/normal-form (ig/subtract test-graph [[:john
                                                :likes :meat
                                                :isa :person]
                                               [:mary :name]]))
@@ -134,16 +142,11 @@
             :person {:subClassOf #{:thing}}}
            
            ))
-    (is (= (add test-graph [])
-           test-graph))
-
-    (is (= (subtract test-graph [])
-           test-graph))
     ))
 
 (deftest query-test
   (testing "Tests a basic query against the dummy test-graph"
-    (is (= (query test-graph
+    (is (= (ig/query test-graph
                   [[:?liker :likes :?likee]
                    [:?likee :isa :?type]]
                   )
@@ -154,7 +157,7 @@
               :?likee :meat,
               :?liker :john}}
            ))
-    (is (= (query test-graph
+    (is (= (ig/query test-graph
                   [[:?liker :likes :?likee]
                    [:?likee :isa :?class]
                    [:?class subClassOf* :?super]])
@@ -164,25 +167,24 @@
              {:?super :consumable, :?class :drink, :?likee :coke, :?liker :mary}
              {:?super :consumable, :?class :food, :?likee :meat, :?liker :john}
              {:?super :drink, :?class :drink, :?likee :coke, :?liker :mary}}))
-    (is (= (query test-graph
-                  [[:?not-there :no-relation :nothing-to-see-here]])
-           #{}))
     ))
 
 
 (deftest utility-test
   (testing "Test the `unique` function"
-    (is (= (unique #{:just-me})
+    (is (= (ig/unique #{:just-me})
            :just-me))
-    (is (= (unique #{})
+    (is (= (ig/unique #{})
            nil))
-    (is (thrown? Exception (unique #{:just-me :no-theres-me-too!})))
 
-    (is (= (unique [:just-me :no-theres-me-too!] first)
+    (is (thrown? #?(:cljs js/Object :clj Exception)
+                 (ig/unique #{:just-me :no-theres-me-too!})))
+
+    (is (= (ig/unique [:just-me :no-theres-me-too!] first)
            :just-me))
-    
+   
     ;; specific to Graph, not part of IGraph
-    (is (= (set (vector-of-triples test-graph))
+    (is (= (set (g/vector-of-triples test-graph))
            #{[:consumable :subClassOf :thing]
              [:person :subClassOf :thing]
              [:isa :isa :property]
@@ -201,45 +203,46 @@
 
 (deftest iset-test
   (testing "Test the ISet functions"
-    (let [g1 (add (make-graph) [[:a :b :c :d :e]
-                                [:f :g :h :i :j]
-                                ])
-          g2 (add (make-graph) [[:a :b :c]
-                                [:x :y :z]])
+    (let [g1 (ig/add (g/make-graph) [[:a :b :c :d :e]
+                                     [:f :g :h :i :j]
+                                     ])
+          g2 (ig/add (g/make-graph) [[:a :b :c]
+                                     [:x :y :z]])
           ]
                                
-    (is (= (normal-form (union g1 g2))
-           (normal-form (add (make-graph) [[:a :b :c :d :e]
-                                           [:f :g :h :i :j]
-                                           [:x :y :z]
-                                           ]))))
-    (is (= (normal-form (intersection g1 g2))
-           (normal-form (add (make-graph)
-                             [[:a :b :c]]))))
-    (is (= (normal-form (difference g1 g2))
-           (normal-form (add (make-graph)
-                             [[:a :d :e]
-                              [:f :g :h :i :j]]))))
-    )))
+      (is (= (ig/normal-form (ig/union g1 g2))
+             (ig/normal-form (ig/add (g/make-graph) [[:a :b :c :d :e]
+                                                     [:f :g :h :i :j]
+                                                     [:x :y :z]
+                                                     ]))))
+      (is (= (ig/normal-form (ig/intersection g1 g2))
+             (ig/normal-form (ig/add (g/make-graph)
+                                     [[:a :b :c]]))))
+      (is (= (ig/normal-form (ig/difference g1 g2))
+             (ig/normal-form (ig/add (g/make-graph)
+                                     [[:a :d :e]
+                                      [:f :g :h :i :j]]))))
+      )))
 
 (deftest traverse-test
   (testing "Test traverse and transitive-closure"
-    (let [g (add (make-graph) [[:a :isa :b] [:b :isa :c][:c :isa :d]])
+    (let [g (ig/add (g/make-graph)
+                    [[:a :isa :b] [:b :isa :c][:c :isa :d]])
           isa* (fn [g context acc to-visit]
                  [context,
                   (conj acc (first to-visit)),
                   (concat (rest to-visit) (g (first to-visit) :isa))])
           ]
-      (is (= (traverse g isa* [] [:a])
+      (is (= (ig/traverse g isa* [] [:a])
              [:a :b :c :d]))
       ;; transitive-closure writes equivalent of isa*...
-      (is (= (traverse g (transitive-closure :isa) [] [:a])
+      (is (= (ig/traverse g (ig/transitive-closure :isa) [] [:a])
              [:a :b :c :d]))
       
       ;; traversal p's
-      (is (= (test-graph :coke (traverse-link :isa))
+      (is (= (test-graph :coke (ig/traverse-link :isa))
              #{:drink}))
-      (is (= (test-graph :coke (traverse-link :isa) :drink)
+      (is (= (test-graph :coke (ig/traverse-link :isa) :drink)
              :drink))
       (is (= (test-graph :drink subClassOf*)
              #{:consumable :drink :thing}))
@@ -250,6 +253,3 @@
       (is (= (test-graph :coke isa->subClassOf* :person)
              nil))      
       )))
-
-
-      

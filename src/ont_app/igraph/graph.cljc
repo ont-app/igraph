@@ -175,7 +175,10 @@ The core type declaration:
 TODO: replace with a spec regime.
 "
   (when-not (odd? (count v))
-    (throw (make-error (str "Non-odd count " (count v) " in " v)))))
+    (throw (ex-info (str "Non-odd count " (count v) " in " v)
+                    {:type ::NonOddTripleSpec
+                     :triple-spec v
+                     }))))
 
 (defmethod add-to-graph [Graph :vector-of-vectors] [g triples]
   "

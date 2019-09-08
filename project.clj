@@ -10,23 +10,55 @@
   
   ;; :main ^:skip-aot ont-app.igraph.core
   :target-path "target/%s"
+  :resource-paths ["resources" "target/cljsbuild"]
+  
   :plugins [[lein-codox "0.10.6"]
             [lein-cljsbuild "1.1.7"
              :exclusions [[org.clojure/clojure]]]
             [lein-doo "0.1.10"]
             ]
+  :source-paths ["src"]
+  :test-paths ["src" "test"]
   :cljsbuild
-  {:builds
-   ;; for testing the cljs incarnation
-   ;; run with 'lein doo firefox test once' or swap in some other browser
-   {:test {:source-paths ["src" "cljs-test"]
-           :compiler {:output-to "resources/test/compiled.js"
-                      ;; entry point for doo-runner:
-                      :main ont-app.igraph.browser ;; at cljs-test/igraph/browser.cljs
+  {
+   :test-commands {"test" ["lein" "doo" "node" "test" "once"]}
+   :builds
+   {
+    :dev {:source-paths ["src"]
+           :compiler {
+                      :main ont-app.igraph.core 
+                      :asset-path "js/compiled/out"
+                      :output-to "resources/public/js/igraph.js"
+                      :source-map-timestamp true
+                      :output-dir "resources/public/js/compiled/out"
                       :optimizations :none
-                      :warnings {:bad-method-signature false}
-                      }}}
-   }
+                      }
+          }
+    ;; for testing the cljs incarnation
+    ;; run with 'lein doo node test
+    :test {:source-paths ["src" "test"]
+           :compiler {
+                      :main ont-app.igraph.doo
+                      :target :nodejs
+                      :asset-path "resources/test/js/compiled/out"
+                      :output-to "resources/test/compiled.js"
+                      :output-dir "resources/test/js/compiled/out"
+                      :optimizations :advanced ;;:none
+                      }
+           }
+   }} ;; end cljsbuild
+
   :codox {:output-path "doc"}
 
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all}
+             :dev {:dependencies [[binaryage/devtools "0.9.10"]
+                                  ]
+                   :source-paths ["src"] 
+                   :clean-targets
+                   ^{:protect false}
+                   ["resources/public/js/compiled"
+                    "resources/test"
+                    :target-path
+                    ]
+                   }
+             })

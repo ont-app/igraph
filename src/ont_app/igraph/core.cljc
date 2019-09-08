@@ -1,11 +1,20 @@
 (ns ^{:author "Eric D. Scott",
       :doc "Abstractions over a graph object, intended to sit alongside the 
-other basic clojure data structures such as maps and sequences.
+other basic clojure data structures such as maps, vectors and sets.
 "}
     ont-app.igraph.core
   (:require [clojure.set :as set]
             ))
 
+(def jk "asdf")
+
+#?(:cljs
+   (enable-console-print!)
+   )
+
+#?(:cljs
+   (defn on-js-reload [] )
+   )
 
 (defprotocol IGraph
   "An abstraction for S-P-O graphs"
@@ -84,13 +93,13 @@ Where
   
   (read-only? [g]
     "Returns true if the membership of <g> is static 
-and add/subtract functions will throw an exception. This 
-may hold for example when <g> is a public endpoint for which write 
+and add/subtract functions will throw an exception of type ::ReadOnly. 
+This may hold for example when <g> is a public endpoint for which write 
 permission is denied"
     )
   (add [g to-add]
     "Returns <g>, with <to-add> added to its contents.
-Throws an exception if (read-only? <g>)
+Throws a ::ReadOnly exception if (read-only? <g>)
 Where
 <g> is a graph
 <to-add> is in some format interpretable as a set of triples.
@@ -98,7 +107,7 @@ Where
     )
   (subtract [g to-subtract]
     "Returns <g> with <to-subtract> removed from its contents.
-Throws an exception if (read-only? <g>)
+Throws a ::ReadOnly exception if (read-only? <g>)
 Where
 <g> is a graph
 <to-subtract> is in some format interpretable as a set of triples.
@@ -127,6 +136,7 @@ Where
 
 (defn normal-form? 
   "Returns true iff <m> is in normal form for IGraph."
+  ;; TODO: port to clojure.spec
   [m]
   (and (map? m) 
        (or (empty? m)
@@ -149,6 +159,7 @@ Where
   :vector-of-vectors indicates <triples-spec> := [<triple>...]
   <type> = (type <triples-spec>)
   "
+  ;;TODO port to clojure.spec
   [triples-spec]
   (or (:triples-format (meta triples-spec))
       ;; else there's no metadata...
@@ -184,7 +195,6 @@ Where
 ;;;;;;;;;;;;;;;
 ;;; TRAVERSAL
 ;;;;;;;;;;;;;;;;
-
 (defn traverse 
   "Returns `acc` acquired by applying `traversal` to `g` starting with `queue`, informed by `context`
   Where
@@ -221,7 +231,8 @@ Where
   ([g traversal acc queue]
    (traverse g traversal {:history #{}} acc queue))
   ([g traversal context acc queue]
-   {:pre [(fn? traversal)
+   {:pre [(satisfies? IGraph g)
+          (fn? traversal)
           (map? context)
           (or (set? (:history context))
               (nil? (:history context)))
@@ -230,6 +241,7 @@ Where
           (or (nil? (:skip? context))
               (fn? (:skip? context))
               (set? (:skip? context)))
+          (sequential? queue)
           ]
     ;; :post (= (type acc) (type %)) doesn't like recur
     }
@@ -268,17 +280,19 @@ Where
 
 (defn transitive-closure 
   "Returns <traversal> for chains of `p`.
-Where
-<traversal> := (fn [g acc queue]...) -> [<context> <acc'> <queue'>], 
-  s.t. <queue'> conj's all <o> s.t. (g <s> <p> <o>).  
-  A traversal function argument for the `traverse` function .
-<p> is a predicate, typcially an element of <g>
-<g> is a graph.
+  Where
+  <traversal> := (fn [g acc queue]...) -> [<context> <acc'> <queue'>], 
+    s.t. <queue'> conj's all <o> s.t. (g <s> <p> <o>).  
+    A traversal function argument for the `traverse` function .
+  <p> is a predicate, typcially an element of <g>
+  <g> is a graph.
+  NOTE:
+  cf the '*' operator in SPARQL property paths
   "
   [p]
   {:pre [(not (fn? p))] ;; direct matches only, no traversals
    }
-  (fn transitive-closure-traversal [g context acc queue]
+  (fn transistive-closure-traversal [g context acc queue]
     [context,
      (conj acc (first queue)),
      (concat (rest queue) (g (first queue) p))]))
@@ -310,9 +324,98 @@ Where
                (g s p)),
        (rest queue)])))
 
+(defn maybe-traverse-link [p]
+  "Returns traversal function (fn [g context, acc queue]...)
+    -> [context, acc', queue'], 
+  Where
+  <acc'> includes <node> and and as many <o>s as are linked from <node>
+     by <p> in <g> 
+  <queue> := [<node> ...], nodes to visit in traversal
+  <p> is a predicate in <g>
+  <g> is a graph
+
+  NOTE: typically used as one component in a traversal path. 
+  cf the '?' operator in SPARQL property paths
+"
+  (fn optional-link-traversal [g context acc queue]
+    (let [s (first queue)]
+      [context,
+       (reduce (fn [acc node]
+                 (conj acc node))
+               (conj acc s)
+               (g s p)),
+       (rest queue)])))
+
+(defn traversal-comp [comp-spec]
+  "Returns a traversal function composed of elements specified in `comp-spec`
+Where
+<comp-spec> := {:path [<spec-element>, ...]
+                <spec-element> {:fn <traversal-fn>
+                                :into <initial-acc> (default [])
+                                :local-context <context> (default #{})
+                                :update-global-context <update-fn> (default nil)
+                               }
+                }
+<spec-element> is typically a keyword naming a stage in the traversal, though
+  it can also be a direct reference to a traversal function, in which case
+  it will be equivalent to {:fn <spec-element>}
+<traversal-fn> := (fn [g context acc queue]...) -> [context' acc' queue']
+<context> is a traversal context conforming to the traverse function (see docs)
+<update-fn> := (fn [global-context local-context] ...) -> global-context' 
+  This is provided in case there is some coordination that needs to be provided
+  between stages in a composed traversal.
+<initial-acc> is the (usually empty) container used to initial the acc
+  of the traversal stage being specified
+Example (comp-spec {:path [:isa :subClassOf*]
+                    :isa {:fn (traverse-link :isa)
+                          :local-context {:doc `following an isa link`}
+                          :update-global-context 
+                          (fn [gc lc] (assoc gc 
+                                             :status :followed-isa-link))
+                         }
+                    :subClassOf* {:fn (transitive-closure :subClassOf)
+                                  :into #{}
+                                  :update-global-context
+                                  (fn [gc lc] (assoc gc 
+                                               :status :followed-subclassof))
+                                  }
+                     }})
+"
+  {:pre [(or (not (:path comp-spec)) (vector? (:path comp-spec)))
+         (doseq [path-spec (:path comp-spec)]
+           (assert (comp-spec path-spec)))
+         ] ;; TODO use clojure.spec
+   }
+  (fn composed-traversal [g context acc queue]
+    {:pre [(satisfies? IGraph g)
+           (map? context)
+           (sequential? queue)
+           ]
+     }
+    (loop [c context path (:path comp-spec) q queue]
+      (if (empty? path)
+        ;; q is the final result...
+        [(if-let [update-context (:update-global-context c)]
+           (update-context context c)
+           context)
+         (into acc q)
+         []]
+        ;; else there's more path
+        (let [p (first path)
+              c (or (:local-context (comp-spec p)) {})
+              f (if (fn? p)
+                  p
+                  (:fn (comp-spec p)))
+              _ (assert f)
+              a (or (:into (comp-spec p)) []) ;; breadth-first by default
+              a' (traverse g f c a q )
+              ]
+          (recur c
+                  (rest path)
+                  a'))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; MATCH OR TRAVERSE INVOCATION
+;; MATCH-OR-TRAVERSE INVOCATION
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- match-or-traverse-tag [p]
@@ -376,6 +479,7 @@ Informs p-dispatcher
 ;; Utility functions
 ;;;;;;;;;;;;;;;;;;;;
 
+;; Stuff to flatten/unflatten description maps....
 (defn unique
   "Returns the single member of <coll>, or nil if <coll> is empty. Calls <on-ambiguity> if there is more than one member (default is to throw an Exception).
   Where
@@ -392,19 +496,51 @@ Informs p-dispatcher
   ([coll]
    (unique coll (fn [coll]
                   (let [error-msg (str "Non-unique: " coll)]
-                    #?(:clj (throw (Exception. error-msg))
-                       :cljs (throw (js/Error. error-msg))
-                       ))))))
+                    (throw (ex-info "Unique called on non-unique collection"
+                                    {:type ::NonUnique
+                                     :coll coll
+                                     })))))))
 
-(defn reduce-s-p-o [f acc g]
+^{:inverse-of normalize-flat-description}
+(defn flatten-description [p-o]
+  "Returns `p-o` description with singletons broken out into scalars
+Where
+<p-o> := {<p> #{<o>}, ...}, normal form at 'description' level of a graph.
+"
+  (let [maybe-flatten (fn [acc k v]
+                            (assoc acc
+                                   k
+                                   (if (and (set? v) (= (count v) 1))
+                                     (unique v)
+                                     v)))
+        ]
+    (reduce-kv maybe-flatten {} p-o)))
+
+^{:inverse-of flatten-description}
+(defn normalize-flat-description
+  "Returns a normalized p-o description of `m`
+  Where
+  <m> is a plain clojure map"
+  [m]
+  (let [maybe-setify (fn [acc k v]
+                        (assoc acc
+                               k
+                               (if (not (set? v))
+                                 #{v}
+                                 v)))
+        ]
+    (reduce-kv maybe-setify {} m)))
+
+(defn reduce-spo [f acc g]
   "Returns <acc'> s.t. (f acc s p o) -> <acc'> for every triple in <g>
 Where
 <f> := (fn [acc s p o] -> <acc'>
 <acc> is any value, a reduction accumlator
 <s> <p> <o> constitute a triple in <g>
 <g> implements IGraph
-NOTE: C.f. reduce-k-v
+NOTE: C.f. reduce-kv
 "
+  ;;TODO f should conform to some spec
   (letfn [(collect-o [s p acc o]
             (f acc s p o)
             )
@@ -420,6 +556,9 @@ NOTE: C.f. reduce-k-v
     (reduce collect-s-p-o
             acc
             (subjects g))))
-      
 
+(def reduce-s-p-o reduce-spo)
+;; TODO rename all references of this to reduce-spo to align with naming of reduce-kv
+
+;; (def jk "asdf")
 
