@@ -4,9 +4,10 @@ other basic clojure data structures such as maps, vectors and sets.
 "}
     ont-app.igraph.core
   (:require [clojure.set :as set]
+            [clojure.spec.alpha :as spec]
             ))
 
-(def jk "asdf")
+;; FUN WITH READER MACROS
 
 #?(:cljs
    (enable-console-print!)
@@ -15,6 +16,8 @@ other basic clojure data structures such as maps, vectors and sets.
 #?(:cljs
    (defn on-js-reload [] )
    )
+
+;; No reader macros below this point
 
 (defprotocol IGraph
   "An abstraction for S-P-O graphs"
@@ -145,8 +148,13 @@ Where
                  ]
              (set? o)))))
 
-
-
+(spec/def ::normal-form #(normal-form? %))
+(spec/def ::vector (spec/and vector? #(> (count %) 1) #(odd? (count %))))
+(spec/def ::vector-of-vectors (spec/and vector? (spec/every ::vector)))
+(spec/def ::triples-format (spec/or :vector-of-vectors ::vector-of-vectors
+                                    :vector ::vector
+                                    :normal-form ::normal-form))
+        
 (defn triples-format 
   "Returns the value of (:triples-format (meta <triples-spec>)) or one of #{:vector :vector-of-vectors :normal-form <type>} inferred from the shape of <triples-spec>
   Where
@@ -159,20 +167,22 @@ Where
   :vector-of-vectors indicates <triples-spec> := [<triple>...]
   <type> = (type <triples-spec>)
   "
-  ;;TODO port to clojure.spec
   [triples-spec]
-  (or (:triples-format (meta triples-spec))
-      ;; else there's no metadata...
-      (if (vector? triples-spec)
-        (if (and (> (count triples-spec) 0)
-                 (vector? (triples-spec 0)))
-          :vector-of-vectors
-          :vector)
-        ;; else not a vector
-        (if (normal-form? triples-spec)
-          :normal-form
-          ;; else neither a vector nor normal form
-          (type triples-spec)))))
+  (or (::triples-format (meta triples-spec))
+      (let [conform (spec/conform ::triples-format triples-spec)]
+        (if (= conform ::spec/invalid)
+          (throw (ex-info "Invalid triples format"
+                          (spec/explain-data ::triples-format triples-spec)))
+          ;; else we're good
+          (let [[format value] conform]
+            format)))))
+
+(spec/fdef triples-format
+  :ret #{:vector-of-vectors
+         :vector
+         :normal-form
+         })
+
 
 (defmulti add-to-graph
   "Returns <g>, with <to-add> added
@@ -183,17 +193,56 @@ Where
   "
   (fn [g to-add] [(type g) (triples-format to-add)]))
 
+;; To subtract from a graph, we can use normal form or
+;; leave out  p and o ...
+(spec/def ::underspecified-triple (spec/and vector?
+                                            #(> (count %) 0)
+                                            #(< (count %) 3)
+                                            #(not (vector? (% 0)))))
+(spec/def ::vector-of-underspecified (spec/and vector?
+                                               #(> (count %) 0)
+                                               #(vector? (% 0))))
+(spec/def ::removal-format (spec/or
+                            :triples-format ::triples-format
+                            :underspecified-triple ::underspecified-triple
+                            :vector-of-vectors ::vector-of-underspecified))
+
+(defn triples-removal-format
+  "Returns a keyword describing the format of `triples-spec` for removing a
+  set of triples from a graph.
+  "
+  [triples-spec]
+  (or (::triples-format (meta triples-spec))
+      (let [conform (spec/conform ::removal-format triples-spec)]
+        (if (= conform ::spec/invalid)
+          (throw (ex-info "Invalid triples format"
+                          (spec/explain-data ::removal-format triples-spec)))
+          ;; else we're good
+          (let [[format value] conform]
+            (if (= format :triples-format)
+              ;; value is the kind of triples format
+              (let [[triples-format _] value]
+                triples-format)
+              ;;else :underspecifed
+              format))))))
+
+(spec/fdef triples-removal-format
+  :ret #{:vector-of-vectors
+         :vector
+         :normal-form
+         :underspecified-triple})
+
 (defmulti remove-from-graph
-  "Returns <g>, with <to-add> added
+  "Returns <g>, with <to-remove> removed
   Where
   <g> is a Graph
   <to-add> is interpetable as a set of triples
-  Dispatched according to `triples-format`
+  Dispatched according to `triples-removal-format`
   "  
-  (fn [g to-remove] [(type g) (triples-format to-remove)]))
+  (fn [g to-remove] [(type g) (triples-removal-format to-remove)]))
 
 ;;;;;;;;;;;;;;;
-;;; TRAVERSAL
+;;; Traversal
 ;;;;;;;;;;;;;;;;
 (defn traverse 
   "Returns `acc` acquired by applying `traversal` to `g` starting with `queue`, informed by `context`
@@ -296,9 +345,6 @@ Where
     [context,
      (conj acc (first queue)),
      (concat (rest queue) (g (first queue) p))]))
-
-
-
 
 (defn traverse-link
   "Returns traversal function (fn [g context, acc queue]...)

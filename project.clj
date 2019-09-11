@@ -3,9 +3,10 @@
   :url "https://github.com/ont-app/igraph"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.8.0"]
-                 [org.clojure/clojurescript "1.9.227"]
-                 [lein-doo "0.1.10"]
+  :dependencies [[org.clojure/clojure "1.10.1"]
+                 [org.clojure/clojurescript "1.10.520"]
+                 [org.clojure/spec.alpha "0.2.176"]
+                 [lein-doo "0.1.11"]
                  ]
   
   ;; :main ^:skip-aot ont-app.igraph.core
@@ -15,7 +16,8 @@
   :plugins [[lein-codox "0.10.6"]
             [lein-cljsbuild "1.1.7"
              :exclusions [[org.clojure/clojure]]]
-            [lein-doo "0.1.10"]
+            [lein-doo "0.1.11"]
+            [lein-ancient "0.6.15"]
             ]
   :source-paths ["src"]
   :test-paths ["src" "test"]

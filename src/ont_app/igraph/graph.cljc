@@ -36,7 +36,9 @@ The core type declaration:
 "}
     ont-app.igraph.graph
   (:require [clojure.set :as set]
+            [clojure.spec.alpha :as spec]
             [ont-app.igraph.core
+             :as igraph
              :refer
              [
               add
@@ -136,7 +138,7 @@ The core type declaration:
            contents {}}}]
    {:pre [(= (triples-format contents) :normal-form)]
     }
-   (Graph. schema (with-meta contents {:triples-format :normal-form}))
+   (Graph. schema (with-meta contents {::igraph/triples-format :normal-form}))
    ))
 
 
@@ -147,7 +149,7 @@ The core type declaration:
      (fn [v s p o] (conj v [s p o]))
      []
      g)
-    {:triples-format :vector-of-vectors}))
+    {::igraph/triples-format :vector-of-vectors}))
 
 
 (defmethod add-to-graph [Graph :normal-form] [g to-add]
@@ -170,15 +172,6 @@ The core type declaration:
      :schema (get-schema g)
      :contents (merge-tree (g) to-add))))
 
-(defn triple-check [v]
-  "Throws and error when v is not formatted properly
-TODO: replace with a spec regime.
-"
-  (when-not (odd? (count v))
-    (throw (ex-info (str "Non-odd count " (count v) " in " v)
-                    {:type ::NonOddTripleSpec
-                     :triple-spec v
-                     }))))
 
 (defmethod add-to-graph [Graph :vector-of-vectors] [g triples]
   "
@@ -190,7 +183,6 @@ Where <triples> := [<v> ....]
                                     [s p]
                                     #(conj (set %) o)))                       
         collect-vector (fn [acc v]
-                         (triple-check v)
                          (reduce (partial collect-triple (first v))
                                  acc
                                  (partition 2 (rest v))))
@@ -292,18 +284,19 @@ Note:
                            (-dissoc-in acc v)
                          ;; else this specifies one or more triples...
                          (let []
-                           (triple-check v)
                            (reduce (partial remove-triple (first v))
                                    acc
                                    (partition 2 (rest v))))))
         ]
     (if (empty? triples)
       g
+      ;; else
       (make-graph
        :schema (get-schema g)
        :contents (reduce collect-vector (get-contents g) triples)))))
 
-(defmethod remove-from-graph [Graph :vector] [g to-remove]
+(defmethod remove-from-graph [Graph :vector]
+  [g to-remove]
   "Where
 <to-remove> may be [s] [s p] [s p o]
 "
@@ -317,6 +310,12 @@ Note:
          :contents (-dissoc-in (get-contents g)
                                to-remove))))))
 
+
+(defmethod remove-from-graph [Graph :underspecified-triple]
+  [g to-remove]
+  "Underspecified-vector is a distinction without a difference at this point"
+  (let [f (get-method remove-from-graph [Graph :vector])]
+    (f g to-remove)))
 
 
 (defn get-intersection
@@ -703,9 +702,10 @@ Where
           (assoc query-state
                  :bindings bindings
                  :specified (add (make-graph)
-                                 (mapcat (partial -triplify-binding
-                                                  query-var?)
-                                         (:bindings clause-state))))
+                                 (into []
+                                       (mapcat (partial -triplify-binding
+                                                        query-var?)
+                                               (:bindings clause-state)))))
           (assoc query-state
                  :viable? false
                  :bindings nil
