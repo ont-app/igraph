@@ -339,12 +339,13 @@ Where
   cf the '*' operator in SPARQL property paths
   "
   [p]
-  {:pre [(not (fn? p))] ;; direct matches only, no traversals
+  #_{:pre [(not (fn? p))] ;; direct matches only, no traversals
+     ;; I think that can be relaxed now
    }
   (fn transistive-closure-traversal [g context acc queue]
     [context,
      (conj acc (first queue)),
-     (concat (rest queue) (g (first queue) p))]))
+     (reduce conj (rest queue) (g (first queue) p))]))
 
 (defn traverse-link
   "Returns traversal function (fn [g context, acc queue]...)
@@ -364,8 +365,7 @@ Where
   (fn link-traversal [g context acc queue]
     (let [s (first queue)]
       [context,
-       (reduce (fn [acc node]
-                 (conj acc node))
+       (reduce conj 
                acc
                (g s p)),
        (rest queue)])))
@@ -386,8 +386,7 @@ Where
   (fn optional-link-traversal [g context acc queue]
     (let [s (first queue)]
       [context,
-       (reduce (fn [acc node]
-                 (conj acc node))
+       (reduce conj 
                (conj acc s)
                (g s p)),
        (rest queue)])))
@@ -396,7 +395,9 @@ Where
   "Returns a traversal function composed of elements specified in `comp-spec`
 Where
 <comp-spec> := {:path [<spec-element>, ...]
+                :default-fn <traversal-fn-generator>
                 <spec-element> {:fn <traversal-fn>
+                                :doc <docstring>
                                 :into <initial-acc> (default [])
                                 :local-context <context> (default #{})
                                 :update-global-context <update-fn> (default nil)
@@ -405,6 +406,9 @@ Where
 <spec-element> is typically a keyword naming a stage in the traversal, though
   it can also be a direct reference to a traversal function, in which case
   it will be equivalent to {:fn <spec-element>}
+<traversal-fn-generator> := (fn [spec-element]...) -> <traversal-fn>, to be 
+  invoked in cases where there is no <spec-element> in <comp-spec>,
+  traverse-link is the typical choice here.
 <traversal-fn> := (fn [g context acc queue]...) -> [context' acc' queue']
 <context> is a traversal context conforming to the traverse function (see docs)
 <update-fn> := (fn [global-context local-context] ...) -> global-context' 
@@ -412,20 +416,32 @@ Where
   between stages in a composed traversal.
 <initial-acc> is the (usually empty) container used to initial the acc
   of the traversal stage being specified
-Example (comp-spec {:path [:isa :subClassOf*]
-                    :isa {:fn (traverse-link :isa)
-                          :local-context {:doc `following an isa link`}
+Examples 
+(def comp-spec  {
+                    :default-fn traverse-link
+                    :isa? {:fn (maybe-traverse-link :isa)
+                          :doc `traverses an isa link, if it exists`
+                          :local-context {:doc `traversing an isa link`}
                           :update-global-context 
                           (fn [gc lc] (assoc gc 
                                              :status :followed-isa-link))
                          }
                     :subClassOf* {:fn (transitive-closure :subClassOf)
+                                  :doc 'traverses 0 or more subClassof links'
+                                  :local-context {:doc 'traversing subClassOf*'}
                                   :into #{}
                                   :update-global-context
                                   (fn [gc lc] (assoc gc 
                                                :status :followed-subclassof))
                                   }
                      }})
+(traveral-comp (merge comp-spec
+                      {:path [:isa? :subClassOf*]
+                       :doc 'Traverses the chain of subsumption links for an instance or class'
+                      }))
+
+(traversal-comp (merge comp-spec {:path [:isa :label] :doc 'gets class labels')))
+  
 "
   {:pre [(or (not (:path comp-spec)) (vector? (:path comp-spec)))
          (doseq [path-spec (:path comp-spec)]
@@ -451,7 +467,8 @@ Example (comp-spec {:path [:isa :subClassOf*]
               c (or (:local-context (comp-spec p)) {})
               f (if (fn? p)
                   p
-                  (:fn (comp-spec p)))
+                  (or (:fn (comp-spec p))
+                      (:default-fn comp-spec)))
               _ (assert f)
               a (or (:into (comp-spec p)) []) ;; breadth-first by default
               a' (traverse g f c a q )

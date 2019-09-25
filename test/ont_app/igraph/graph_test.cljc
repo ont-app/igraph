@@ -79,6 +79,8 @@
            #{:consumable :drink :thing}))
     ))
 
+
+
 (deftest subtract-test
   (testing "Variations on subtract"
     (is (= (ig/normal-form (ig/subtract test-graph [:john]))
@@ -167,8 +169,11 @@
              {:?super :consumable, :?class :drink, :?likee :coke, :?liker :mary}
              {:?super :consumable, :?class :food, :?likee :meat, :?liker :john}
              {:?super :drink, :?class :drink, :?likee :coke, :?liker :mary}}))
+    
+    ;; transitive closure should include the o-spec...
+    (is (= (ig/query test-graph [[:?s (ig/transitive-closure :isa) :property]])
+           #{{:?s :likes} {:?s :isa} {:?s :property}}))
     ))
-
 
 (deftest utility-test
   (testing "Test the `unique` function"

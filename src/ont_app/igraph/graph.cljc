@@ -359,14 +359,33 @@ Note:
   "
   Adds new <match> to `matches` for `next-o` in `context`
   Where
+  <match> := {<var> <o>, ... }, as set of variable bindings
+  <matches> := [<match>, ...]
   <next-o> is a graph element, the final element of a matching process for some
     query clause
-  <match> := {<var> <o>, ... }, as set of variable bindings
   <context> is a graph representing the match context for some query clause
-    with subjects :s :p :o and any <var> in the clause
-    with predicates :s|:p|:o :bound-to <var>
-                    :s|:p|:o :value <value>
-                    :s|:p|:o :candidate <candidate>
+    := {:s <fixed-desc> or <elt-desc>
+        :p <fixed-desc> or <elt-desc>
+        :o <open-desc>  or <elt-desc> 
+   <fixed-desc> := {:bound-to #{<var>}
+                   :value #{<value>}
+                  }
+     ... assigns one of the matching values encountered upstream
+  
+   <elt-desc> := {:value #{<value>}
+                 :candidate #{<value>}
+                }
+    ... already matched to a fixed value specified in the clause itself
+
+  <open-desc> := {:bound-to <var>
+                  :candidate #{<value>, ...}
+     ... waiting to be matched to values downstream
+
+  <var> is a variable
+  <value> is a graph element, a singleton subset of #{<candidate>, ...}
+    if candidates are specified.
+  <candidate> may be specified at the start of the clause matching based
+    on whether <var> was matched upstream in the query context
 
   "
   [context matches next-o]
@@ -374,7 +393,7 @@ Note:
                   (context :o :bound-to)
                   (add [:o :value next-o]))
         collect-bindings (fn [b spo]
-                           ;; add value of spo if it's a var
+                           ;; add value of s|p|o if it's a var
                            ;; spo is one of #{:s :p :o}
                            (if-let [var (unique (context spo :bound-to))]
                              (assoc b var (unique (context spo :value)))
@@ -393,12 +412,31 @@ Note:
   <var> is a variable bound to either :s :p  or :o in <context>
   <value> is a value associated with <var> in <g>
   <g> is a Graph
-  <context> is a graph representing the match context for some query clause
-    with subjects :s :p :o and any <var> in the clause
-    with predicates :s|:p|:o :bound-to <var>
-                    :s|:p|:o :value <value>
-                    <var> :candidate <set of candidates>
   <next-p> is either a graph element or a traversal function
+  <context> is a graph representing the match context for some query clause
+    := {:s <fixed-desc> or <elt-desc>
+        :p <open-desc> or <elt-desc>
+        :o <open-desc> or <elt-desc>
+       }
+  <fixed-desc> := {:bound-to #{<var>}
+                   :value #{<value>}
+                  }
+     ... assigns one of the matching values encountered in the course
+     of matching.
+   <elt-desc> := {:value #{<value>}
+                 :candidate #{<value>}
+                }
+    ... already matched to a fixed value specified in the clause itself
+
+  <open-desc> := {:bound-to <var>
+                  :candidate #{<value>, ...}
+     ... waiting to be matched to values downstream
+  <var> is a variable
+  <value> is a graph element, a singleton subset of #{<candidate>, ...}
+    if candidates are specified.
+  <candidate> may be specified at the start of the clause matching based
+    on the upstream query context.
+
   "
   [^Graph g ^Graph context matches next-p]
   {:pre [(set? matches)
@@ -442,8 +480,6 @@ Note:
               matches
               ;; match the objects for <s> and <next-p>
               (qualify-os (g (unique (context :s :value)) next-p))))))
-
-                           
                 
 
 (defn- -collect-s-p-o-matches
@@ -453,12 +489,21 @@ Note:
   <next-s> is a subject matching the current clause in some query.
   <match> := #{:<var> <value>,...}
   <g> is a Graph
-  <context> is a graph representing the match context for some query clause
-    with subjects :s :p :o and any <var> in the clause
-    with predicates :s|:p|:o :bound-to <var>
-                    :s|:p|:o :value <value>
-                    :s|:p|:o :candidate <set of candidates>  
-
+    <context> is a graph representing the match context for some query clause
+    := {:s <open-desc> or <elt-desc>
+        :p <open-desc> or <elt-desc>
+        :o <open-desc> or <elt-desc>
+       }
+  <open-desc> := {:bound-to #{<var>} 
+                 :candidate #{<candidate>, ...} or nil if anything matches
+    ... waiting to be matched to values downstream
+  <elt-desc> := {:value #{<value>}
+                 :candidate #{<value>}
+                }
+    ... already matched to a fixed value specified in the clause itself
+  <var> is a :?variable
+  <candidate> may be specified at the start of the clause matching based
+    on whether <var> was bound upstream in the query context
   "
   [^Graph g ^Graph context matches next-s]  
   {:pre [(set? matches)]
@@ -514,7 +559,7 @@ Note:
         query-var? (:query-var? query-context)
         candidates-for (fn [q-var]
                          ;; returns the set of values already bound
-                         ;; to any var upstream the current clause
+                         ;; to any var upstream. the current clause
                          ;; must bind to a subset of these
                          (if-let [cs (-> query-context
                                          :specified
@@ -575,8 +620,17 @@ Note:
             ;; with <s>.
             (if (query-var? s-spec)
               (or (candidates-for s-spec)
-                  (subjects g)) ;; Expensive for large graphs
+                  ;; Expensive for large graphs ...
+                  (let [ss (set (subjects g))]
+                    (if (fn? p-spec) ;; may be a closure with path of 0 len
+                      (if (var? o-spec)
+                        (set/union ss (candidates-for o-spec))
+                        ;; else o-spec is a graph element
+                        (set/union ss #{o-spec}))
+                      ;; else not a fn, path is of length 1
+                      ss)))
               ;; TODO: consider introducing an indexing facility
+              ;; else s-spec is a graph element
               [s-spec]))))
 
 (defn- -collect-clause-match
@@ -673,6 +727,7 @@ Where
          (vector? next-clause)
          (= (count next-clause) 3)]
    }
+
   (if-not (:viable? query-state)
     query-state
     ;; else the query is still viable
