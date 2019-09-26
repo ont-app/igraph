@@ -391,6 +391,31 @@ Where
                (g s p)),
        (rest queue)])))
 
+(defn disjoint-traversal [& ps]
+  "Returns traversal function (fn [g context, acc queue]...)
+    -> [context, acc', queue'], for `ps`
+  Where
+  <acc'> includes <node> and and as many <o>s as are linked from <node>
+     by <p1> | <p2> | ...  in <g> 
+  <queue> := [<node> ...], nodes to visit in traversal
+  <ps> := [<p1>, <p2>, ...]
+  <p1>, <p2>, ...  are all predicates in <g>, or traversal functions
+  <g> is a graph
+
+  cf the '|' operator in SPARQL property paths
+"
+  (fn traversal-disjunction [g context acc queue]
+    (letfn [(collect-traversals
+              [s sacc p]
+              (reduce conj sacc (g s p)))
+             ]
+    [context,
+     (reduce conj acc (reduce (partial collect-traversals (first queue))
+                              #{}
+                              ps)),
+     (rest queue)
+     ]) ))
+
 (defn traversal-comp [comp-spec]
   "Returns a traversal function composed of elements specified in `comp-spec`
 Where
