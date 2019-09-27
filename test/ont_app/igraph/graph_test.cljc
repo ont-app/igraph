@@ -79,10 +79,12 @@
            #{:consumable :drink :thing}))
     (is (= (test-graph :john (ig/transitive-closure
                               (ig/disjoint-traversal :isa :subClassOf)))
-           ;; ... any sequence of isa|subClassOf
+           ;; ... (isa|subClassOf)*
            #{:person :thing :john}))
+    
+    (is (= (test-graph :thing (ig/inverse-link :subClassOf))
+           #{:consumable :person}))
     ))
-
 
 
 (deftest subtract-test

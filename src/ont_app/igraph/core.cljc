@@ -416,6 +416,7 @@ Where
      (rest queue)
      ]) ))
 
+
 (defn traversal-comp [comp-spec]
   "Returns a traversal function composed of elements specified in `comp-spec`
 Where
@@ -473,34 +474,42 @@ Examples
            (assert (comp-spec path-spec)))
          ] ;; TODO use clojure.spec
    }
-  (fn composed-traversal [g context acc queue]
-    {:pre [(satisfies? IGraph g)
-           (map? context)
-           (sequential? queue)
-           ]
-     }
-    (loop [c context path (:path comp-spec) q queue]
-      (if (empty? path)
-        ;; q is the final result...
-        [(if-let [update-context (:update-global-context c)]
-           (update-context context c)
-           context)
-         (into acc q)
-         []]
-        ;; else there's more path
-        (let [p (first path)
-              c (or (:local-context (comp-spec p)) {})
-              f (if (fn? p)
-                  p
-                  (or (:fn (comp-spec p))
-                      (:default-fn comp-spec)))
-              _ (assert f)
-              a (or (:into (comp-spec p)) []) ;; breadth-first by default
-              a' (traverse g f c a q )
-              ]
-          (recur c
-                  (rest path)
-                  a'))))))
+  (let [comp-spec (if (vector? comp-spec)
+                    {:path comp-spec}
+                    comp-spec)
+        ]
+    (fn composed-traversal [g context acc queue]
+      {:pre [(satisfies? IGraph g)
+             (map? context)
+             (sequential? queue)
+             ]
+       }
+      (loop [c context
+             path (:path comp-spec)
+             q queue]
+        (if (empty? path)
+          ;; q is the final result...
+          [(if-let [update-context (:update-global-context c)]
+             (update-context context c)
+             context)
+           (into acc q)
+           []]
+          ;; else there's more path
+          (let [p (first path)
+                p-spec (or (comp-spec p) {})
+                c (or (:local-context p-spec)
+                      {})
+                f (if (fn? p)
+                    p
+                    (or (:fn p-spec
+                             (:default-fn comp-spec))))
+                _ (assert f)
+                a (or (:into (comp-spec p)) []) ;; breadth-first by default
+                a' (traverse g f c a q )
+                ]
+            (recur c
+                   (rest path)
+                   a')))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; MATCH-OR-TRAVERSE INVOCATION
