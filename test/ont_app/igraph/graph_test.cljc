@@ -81,9 +81,7 @@
                               (ig/disjoint-traversal :isa :subClassOf)))
            ;; ... (isa|subClassOf)*
            #{:person :thing :john}))
-    
-    (is (= (test-graph :thing (ig/inverse-link :subClassOf))
-           #{:consumable :person}))
+
     ))
 
 
