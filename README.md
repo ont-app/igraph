@@ -90,6 +90,19 @@ The function returned by this call when called as a traversal will
 accumulate all `o` s.t. for all `s` in `queue`, (g s p o). This is is
 useful for example in specifying the first (<i>instance-of</i>) stage of a complex traversal <i>x instance-of/subclass-of* y</i>.
 
+###### Utility: `traverse-disjunction`
+
+- `(traverse-disjuction & ps)` -> (fn [g context acc queue] ...) -> [context acc' []],
+
+Where `ps` is one or more predicates. Matches any of those predicates.
+
+
+###### Utility: `maybe-traverse-link`
+
+- `(maybe-traverse-link p)` -> (fn [g context acc queue] ...) -> [context acc' []]
+
+Matches 0 or 1 occurrances of `p`.
+
 ###### As the `p` argument in accessors
 
 Recall that implementations of IGraph should provide `invoke` functions with 0-3 arguments.
@@ -111,6 +124,40 @@ The `p` argument is typically the identifier of a graph element in `g`, but it c
 
 See also the `subClassOf*` examples in the discussion below describing the of the `Graph` type.
 
+###### Composition of traversal functions (`traversal-comp`)
+
+Composition functions are composable with a 'short form' and a 'long form'.
+
+####### Short form composition
+
+Short-form composition can be used when the traversal function meets the followin criteria:
+- None of the component functions manipulate the traversal context
+- Each component function accumulates a sequential value suitable to serve as the initual queue of the component function that follows it.
+
+Such functions can be called as simple vector:
+`(traversal-comp [(maybe-traverse :rdf/type) (transitive-closure :rdfs/subClassOf)])`
+Is equivalent to the SPARQL property path `a?/rdfs:subClassOf*`
+
+####### Long form composition
+
+In cases where one wants to compose traversal function that cannot meet the criteria above, then instead of passing to `traversal-comp` in a vector of traversal functions, one passes in a map with the following keys:
+`{ :path  [:traversal-name-1 :traversal-name-2...]
+   :default-fn <traversal-fn-generator>
+   :traversal-name-1 {:fn <traversal-fn>
+                      :doc <docstring>
+                      :into <initial accumulator> (default [])
+                      :local-context <context> (default {})
+                      :update-global-context <update-fn> (default nil)
+                      }
+   traversal-name-2 ...
+   ...
+ }
+ `
+These parameters allow you to as much control as you need over the various traversal contexts in play, and making sure that the output values from one traversal feed appropriately into the initial queue of the next traversal.
+
+But most of the time, the short form is all that's needed. See the docstring of `traversal-comp` for more on the long form.
+
+
 #### Multimethods to add/remove from graph
 There are multi-methods defined `add-to-graph` and `remove-from-graph`, dispatched on `triples-format`
 
@@ -128,8 +175,17 @@ these values when defining `add` and `subtract`.
 - `(normal-form? m)` -> true iff m is a map in normal form.
 
 
-- `(reduce-s-p-o f acc g) -> `acc'` s.t. `f` is called on each triple in `g`.
+- `(reduce-spo f acc g) -> `acc'` s.t. `f` is called on each triple in `g`.
 Where `f` := `(fn [acc s p o]...) -> acc'`
+
+##### cardinality-1 utilites
+Requiring normal form to provide a set as its 3rd-tier representation has the advantage of ensuring the the normal form is as simple as possible, and makes it easy to think about set operations over graphs, but it can be a bit unwieldy when dealing with the many cases where the discriptive map's keys reliably map to a single scalar value.
+
+The following utilities are provided to help:
+
+- `(unique [x]) -> x` There is an optional 2nd parameter to deal with the case where the argument is not a singleton, but by default it raises an error.
+- `(flatten-description (g s))` Automatically translates the p-o description into a simple k-v mappings when only a single object exists.
+- `(normalize-flat-description m)` inverts the flattened description and renders it into a form that can easily be added back into a graph.
 
 ### IGraphSet
 
@@ -355,6 +411,13 @@ See also the  [test file](https://github.com/ont-app/igraph/blob/master/test/igr
 ### Bugs
 
 Probably lots. This is brand-spankin' new.
+
+### Future work
+
+- `clojure.spec` will be much more in evidence
+- There will be a weighted-normal-form, whose 3rd tier will map objects to numeric weights
+- `igraph.graph` will have better query planning and indexing
+- Datomic, loom, ubergraph, and other graph-oriented libraries will be ported 
 
 ## License
 

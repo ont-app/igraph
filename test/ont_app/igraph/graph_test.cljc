@@ -78,7 +78,7 @@
     (is (= (test-graph :drink subClassOf*)
            #{:consumable :drink :thing}))
     (is (= (test-graph :john (ig/transitive-closure
-                              (ig/disjoint-traversal :isa :subClassOf)))
+                              (ig/traverse-disjunction :isa :subClassOf)))
            ;; ... (isa|subClassOf)*
            #{:person :thing :john}))
 

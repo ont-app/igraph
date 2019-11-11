@@ -391,7 +391,7 @@ Where
                (g s p)),
        (rest queue)])))
 
-(defn disjoint-traversal [& ps]
+(defn traverse-disjunction [& ps]
   "Returns traversal function (fn [g context, acc queue]...)
     -> [context, acc', queue'], for `ps`
   Where
@@ -425,7 +425,7 @@ Where
                 <spec-element> {:fn <traversal-fn>
                                 :doc <docstring>
                                 :into <initial-acc> (default [])
-                                :local-context <context> (default #{})
+                                :local-context <context> (default {})
                                 :update-global-context <update-fn> (default nil)
                                }
                 }
