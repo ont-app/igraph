@@ -128,20 +128,23 @@ See also the `subClassOf*` examples in the discussion below describing the of th
 
 Composition functions are composable with a 'short form' and a 'long form'.
 
-####### Short form composition
+###### Short form composition
 
 Short-form composition can be used when the traversal function meets the followin criteria:
 - None of the component functions manipulate the traversal context
 - Each component function accumulates a sequential value suitable to serve as the initual queue of the component function that follows it.
 
 Such functions can be called as simple vector:
+
 `(traversal-comp [(maybe-traverse :rdf/type) (transitive-closure :rdfs/subClassOf)])`
+
 Is equivalent to the SPARQL property path `a?/rdfs:subClassOf*`
 
-####### Long form composition
+###### Long form composition
 
 In cases where one wants to compose traversal function that cannot meet the criteria above, then instead of passing to `traversal-comp` in a vector of traversal functions, one passes in a map with the following keys:
-`{ :path  [:traversal-name-1 :traversal-name-2...]
+```
+{ :path  [:traversal-name-1 :traversal-name-2...]
    :default-fn <traversal-fn-generator>
    :traversal-name-1 {:fn <traversal-fn>
                       :doc <docstring>
@@ -152,7 +155,7 @@ In cases where one wants to compose traversal function that cannot meet the crit
    traversal-name-2 ...
    ...
  }
- `
+ ```
 These parameters allow you to as much control as you need over the various traversal contexts in play, and making sure that the output values from one traversal feed appropriately into the initial queue of the next traversal.
 
 But most of the time, the short form is all that's needed. See the docstring of `traversal-comp` for more on the long form.
@@ -164,12 +167,13 @@ There are multi-methods defined `add-to-graph` and `remove-from-graph`, dispatch
 ```
 (triples-format g to-add-or-remove)
 -> 
-;; One of `:normal-form`, `:vector`, `:vector-of-vectors`, or defaulting to the type of `to-add-or-remove`
+;; One of `::normal-form`, `::vector`, `::vector-of-vectors`, or defaulting to the type of `to-add-or-remove`
 ```
 
 Implementations of IGraph will typically define methods for each of
 these values when defining `add` and `subtract`.
 
+`::normal-form`, `::vector` and `::vectorOfVectors` have `clojure.spec` definitions.
 
 #### utilities
 - `(normal-form? m)` -> true iff m is a map in normal form.
@@ -186,6 +190,17 @@ The following utilities are provided to help:
 - `(unique [x]) -> x` There is an optional 2nd parameter to deal with the case where the argument is not a singleton, but by default it raises an error.
 - `(flatten-description (g s))` Automatically translates the p-o description into a simple k-v mappings when only a single object exists.
 - `(normalize-flat-description m)` inverts the flattened description and renders it into a form that can easily be added back into a graph.
+
+##### I/O
+`(write-to-file [path g] ...) -> path` (clj only)
+
+Will write an edn file with the normal form contents of `g`.
+
+`(read-from-file [g path] ...) -> g'` (clj only)
+
+Will read the an edn the normal form contents of `path` into `g`.
+
+These is defined for clj hosts only.
 
 ### IGraphSet
 

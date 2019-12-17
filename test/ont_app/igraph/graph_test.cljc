@@ -260,5 +260,21 @@
       (is (= (test-graph :coke isa->subClassOf* :drink)
              :drink))
       (is (= (test-graph :coke isa->subClassOf* :person)
-             nil))      
+             nil))
+      (is (= (test-graph :john (ig/traversal-comp [:likes :isa]))
+             #{:food}))
       )))
+
+#?(:clj
+   (deftest io-test
+     (testing "Saving and restoring"
+       (let [test-path (ig/write-to-file "/tmp/igraph-test.edn" test-graph)
+             test-graph' (ig/read-from-file (g/make-graph) test-path)
+             ]
+         (is (.exists (clojure.java.io/as-file test-path))
+             true)
+         (is (= (ig/normal-form test-graph')
+                (ig/normal-form test-graph)))
+         (clojure.java.io/delete-file test-path)))))
+         
+         

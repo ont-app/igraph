@@ -3,8 +3,11 @@
 other basic clojure data structures such as maps, vectors and sets.
 "}
     ont-app.igraph.core
-  (:require [clojure.set :as set]
+  (:require [clojure.pprint :as pp]
+            [clojure.set :as set]
             [clojure.spec.alpha :as spec]
+            [clojure.string :as str]
+            #?(:clj [clojure.java.io :as io])
             ))
 
 ;; FUN WITH READER MACROS
@@ -16,6 +19,38 @@ other basic clojure data structures such as maps, vectors and sets.
 #?(:cljs
    (defn on-js-reload [] )
    )
+
+(declare normal-form)
+#?(:clj
+   (defn write-to-file [path g]
+     "Side-effect: writes normal form of `g` to <path> as edn.
+Returns: <path>
+Where
+<path> is the output of <path-fn>
+<g> implements IGraph
+<path-fn> a function [g] -> <path>.
+NOTE: Anything that would choke the reader on slurp should be removed 
+  from <g> before saving.
+"
+     (let [output-path (str/replace path #"^file://" "")
+           ]
+       (io/make-parents output-path)
+       (spit output-path
+             (with-out-str
+               (pp/pprint
+                (normal-form g))))
+       output-path
+       )))
+(declare add)
+#?(:clj
+   (defn read-from-file [g path]
+     "returns `g` with the contents of `path` added
+Where
+<g> implements IGraph
+<path> is an edn file containing a normal-form representation of some graph,
+typically the output of save-to-file."
+     (add g (read-string (slurp (io/as-file path))))
+     ))
 
 ;; No reader macros below this point
 
@@ -468,15 +503,22 @@ Examples
 
 (traversal-comp (merge comp-spec {:path [:isa :label] :doc 'gets class labels')))
   
+Short form example:
+
+(traversal-comp [:family/parent :family/brother])
+... Equal to (traversal-comp [(traverse-link :family/parent) 
+                               (traverse-link :family/brother)]
+An inferred 'uncle' relation.
+
 "
   {:pre [(or (not (:path comp-spec)) (vector? (:path comp-spec)))
          (doseq [path-spec (:path comp-spec)]
            (assert (comp-spec path-spec)))
          ] ;; TODO use clojure.spec
    }
-  (let [comp-spec (if (vector? comp-spec)
+  (let [comp-spec (if (vector? comp-spec) ;; short form, convert to long form
                     {:path comp-spec}
-                    comp-spec)
+                    comp-spec) ;; else already in long form
         ]
     (fn composed-traversal [g context acc queue]
       {:pre [(satisfies? IGraph g)
@@ -485,7 +527,7 @@ Examples
              ]
        }
       (loop [c context
-             path (:path comp-spec)
+             path (:path comp-spec) ;; [<p>, ...]
              q queue]
         (if (empty? path)
           ;; q is the final result...
@@ -499,10 +541,12 @@ Examples
                 p-spec (or (comp-spec p) {})
                 c (or (:local-context p-spec)
                       {})
-                f (if (fn? p)
-                    p
-                    (or (:fn p-spec
-                             (:default-fn comp-spec))))
+                f (cond
+                    (fn? p) p
+                    (keyword? p) (traverse-link p)
+                    :default
+                    (or (:fn p-spec)
+                        (:default-fn comp-spec)))
                 _ (assert f)
                 a (or (:into (comp-spec p)) []) ;; breadth-first by default
                 a' (traverse g f c a q )
@@ -576,7 +620,7 @@ Informs p-dispatcher
 ;; Utility functions
 ;;;;;;;;;;;;;;;;;;;;
 
-;; Stuff to flatten/unflatten description maps....
+;; Stuff to deal with cardinality one ....
 (defn unique
   "Returns the single member of <coll>, or nil if <coll> is empty. Calls <on-ambiguity> if there is more than one member (default is to throw an Exception).
   Where
@@ -627,6 +671,11 @@ Where
                                  v)))
         ]
     (reduce-kv maybe-setify {} m)))
+
+(defn assert-unique [g s p o]
+  "Returns `g`', replacing any existing [s p *] with [s p o]"
+  (add (subtract g [s p])
+       [s p o]))
 
 (defn reduce-spo [f acc g]
   "Returns <acc'> s.t. (f acc s p o) -> <acc'> for every triple in <g>

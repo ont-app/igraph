@@ -74,7 +74,7 @@ The core type declaration:
 
 (deftype Graph [schema contents]
   
-  ont-app.igraph.core/IGraph
+  igraph/IGraph
   (normal-form [g] (get-contents g)) 
   (subjects [g] (keys (get-contents g)))
   (get-p-o [g s] (get (get-contents g) s))
@@ -93,7 +93,7 @@ The core type declaration:
   (invoke [g s p] (match-or-traverse g s p))
   (invoke [g s p o] (match-or-traverse g s p o))
   
-  ont-app.igraph.core/IGraphSet
+  igraph/IGraphSet
   (union [g1 g2] (add-to-graph g1 (g2)))
   (intersection [g1 g2] (get-intersection g1 g2))
   (difference [g1 g2] (remove-from-graph g1 (g2)))
