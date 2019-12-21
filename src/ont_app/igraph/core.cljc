@@ -426,7 +426,7 @@ Where
                (g s p)),
        (rest queue)])))
 
-(defn traverse-disjunction [& ps]
+(defn traverse-or [& ps]
   "Returns traversal function (fn [g context, acc queue]...)
     -> [context, acc', queue'], for `ps`
   Where
@@ -452,7 +452,7 @@ Where
      ]) ))
 
 
-(defn traversal-comp [comp-spec]
+(defn t-comp [comp-spec]
   "Returns a traversal function composed of elements specified in `comp-spec`
 Where
 <comp-spec> := {:path [<spec-element>, ...]
@@ -501,12 +501,12 @@ Examples
                        :doc 'Traverses the chain of subsumption links for an instance or class'
                       }))
 
-(traversal-comp (merge comp-spec {:path [:isa :label] :doc 'gets class labels')))
+(t-comp (merge comp-spec {:path [:isa :label] :doc 'gets class labels')))
   
 Short form example:
 
-(traversal-comp [:family/parent :family/brother])
-... Equal to (traversal-comp [(traverse-link :family/parent) 
+(t-comp [:family/parent :family/brother])
+... Equal to (t-comp [(traverse-link :family/parent) 
                                (traverse-link :family/brother)]
 An inferred 'uncle' relation.
 
@@ -703,8 +703,4 @@ NOTE: C.f. reduce-kv
             acc
             (subjects g))))
 
-(def reduce-s-p-o reduce-spo)
-;; TODO rename all references of this to reduce-spo to align with naming of reduce-kv
-
-;; (def jk "asdf")
 
