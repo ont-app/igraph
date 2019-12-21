@@ -5,6 +5,150 @@ plurality of graph-based representations (RDF, datascript, datomic....)
 
 There is also a type Graph defined which implements IGraph.
 
+## Contents
+### [Motivation[(#Motivation)
+### [Dependencies](#Dependencies)
+### [The IGraph protocol](#The_IGraph_protocol)
+#### [Methods summary](#IGraph_Methods_summary)
+#### [Implementation: `ont-app.igraph.graph/Graph`](#Graph_implementation)
+#### [Member access](#Member_access)
+##### [Normal form](#Normal_form)
+##### [Tractability](#Tractability)
+##### [`subjects`](#Subjects_method)
+##### [`get-p-o`](#get-p-o_method)
+##### [`get-o`](#get-o_method)
+##### [`ask`](#ask_method)
+##### [`query`](#query_method)
+##### [`invoke` for arities 0-3](#invoke_method)
+#### [Content Manipulation](#Content_Manipulation)
+##### [`read-only?`](#read-only_method)
+##### [`triples-format`](#triples-format)
+##### [`add`](#add_method)
+##### [`subtract`](#subtract_method)
+### [The IGraphSet protocol](#The_IGraphSet_protocol)
+#### [Methods summary](#IGraphSet_methods_summary)
+#### [`union`](#union_method)
+#### [`intersection`](#intersection_method)
+#### [`difference`](#difference_method)
+### [Traversal](#Traversal)
+#### [`traverse`](#traverse_method)
+#### [Traversal functions](#Traversal_functions)
+##### [`transitive-closure`](#transitive-closure)
+#### [`traverse-link`](#traverse-link)
+##### [`maybe-traverse-link`](#maybe-traverse-link)
+##### `traverse-or`
+#### Traversal composition with `t-comp`
+##### short form
+##### long form
+#### Using traversal functions as a `p` argument to accessor functions
+### cardinality-1 utilites
+#### `unique`
+#### `flatten-description`
+#### `normalize-flat-description`
+#### `assert-unique`
+### i/o
+### Other utilities
+#### `reduce-spo`
+#### `normal-form?`
+## More on `ont-app.igraph.graph/Graph`
+### Querying
+
+<a name="Motivation"></a>
+## Motivation
+<a name="Dependencies"></a>
+## Dependencies
+<a name="The_IGraph_protocol</a>
+## The IGraph protocol
+<a name="Igraph_methods_summary"></a>
+### Methods summary
+<a name="#Graph_implementation"></a>
+### Implementation: `ont-app.igraph.graph/Graph`
+<a name="Member_access"></a>
+### Member access
+<a name="Normal_form"></a>
+#### Normal form
+<a name="Tractability"></a>
+#### Tractability
+<a name="subjects_method"></a>
+#### `subjects`
+<a name="get-p-o_method"></a>
+#### `get-p-o`
+<a name="get-o_method-"></a>
+#### `get-o`
+<a name="ask_method"></a>
+#### `ask`
+<a name="query_method"></a>
+#### `query`
+<a name="invoke_method"></a>
+#### `invoke` for arities 0-3
+<a name="Content_Manipulation"></a>
+### Content Manipulation
+<a name="read-only_method"></a>
+#### `read-only?`
+<a name="triples-format"></a>
+#### triples-format
+<a name="add_method"></a>
+#### `add`
+<a name="subtract_method"></a>
+#### `subtract`
+<a name="The_IGraphSet_protocol"></a>
+## The IGraphSet protocol
+
+<a name="IGraphSet_methods_summary"></a>
+### Methods summary
+<a name="union_method"></a>
+### `union`
+<a name="intersection_method"></a>
+### `intersection`
+<a name="difference_method"></a>
+### `difference`
+<a name="Traversal"></a>
+## Traversal
+<a name="traverse_method"></a>
+### `traverse`
+<a name="Traversal_functions"></a>
+### Traversal functions
+<a name="transitive-closure_method"></a>
+#### `transitive-closure`
+<a name="traverse-link_method"></a>
+### `traverse-link`
+<a name="maybe-traverse-link_function"></a>
+#### `maybe-traverse-link`
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+<a name=""></a>
+
+
 
 ## Installation
 
