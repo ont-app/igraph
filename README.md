@@ -36,22 +36,22 @@ There is also a type Graph defined which implements IGraph.
 ##### [`transitive-closure`](#transitive-closure)
 #### [`traverse-link`](#traverse-link)
 ##### [`maybe-traverse-link`](#maybe-traverse-link)
-##### `traverse-or`
-#### Traversal composition with `t-comp`
-##### short form
-##### long form
-#### Using traversal functions as a `p` argument to accessor functions
-### cardinality-1 utilites
-#### `unique`
-#### `flatten-description`
-#### `normalize-flat-description`
+##### [`traverse-or`](#traverse-or)
+#### [Traversal composition with `t-comp`](#Traversal_composition`)
+##### [short form](#t-comp__short_form)
+##### [long form](#t-comp_long_form)
+#### [Using traversal functions as a `p` argument to accessor functions](#traversal-fn-as-p)
+### [cardinality-1 utilites](#cardinality-1_utilites)
+#[### `unique`](#unique)
+#### [`flatten-description`](#flatten-description)
+#### [`normalize-flat-description`](#normalize-flat-description)
 #### `assert-unique`
-### i/o
-### Other utilities
-#### `reduce-spo`
-#### `normal-form?`
-## More on `ont-app.igraph.graph/Graph`
-### Querying
+### [i/o](#i-o)
+### [Other utilities](#Other_utilities)
+#### [`reduce-spo`](#reduce-spo)
+#### [`normal-form?`](#normal-form-q)
+## [`ont-app.igraph.graph/Graph`](#Graph)
+### [Querying](#Querying)
 
 <a name="Motivation"></a>
 ## Motivation
@@ -108,28 +108,44 @@ There is also a type Graph defined which implements IGraph.
 ### `traverse`
 <a name="Traversal_functions"></a>
 ### Traversal functions
-<a name="transitive-closure_method"></a>
+<a name="transitive-closure"></a>
 #### `transitive-closure`
 <a name="traverse-link_method"></a>
 ### `traverse-link`
-<a name="maybe-traverse-link_function"></a>
+<a name="maybe-traverse-link"></a>
 #### `maybe-traverse-link`
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
-<a name=""></a>
+<a name="traverse-or"></a>
+#### `traverse-or`
+<a name="Traversal_composition"></a>
+### Traversal composition with `t-comp`
+<a name="t-comp_short_form"></a>
+#### short form
+<a name="t-comp_long_form"></a>
+#### long form
+<a name="traversal-fn-as-p"></a>
+### Using traversal functions as a `p` argument to accessor functions
+<a name="cardinality-1_utilities"></a>
+## cardinality-1 utilites
+<a name="unique"></a>
+### `unique`
+<a name="flatten-description"></a>
+### `flatten-description`
+<a name="normalize-flat-description"></a>
+### `normalize-flat-description`
+<a name="assert-unique"></a>
+### `assert-unique`
+<a name="i-o"></a>
+## i/o
+<a name="Other_utilities"></a>
+## Other utilities
+<a name="reduce-spo"></a>
+### `reduce-spo`
+<a name="normal-form-q"></a>
+### `normal-form?`
+<a name="Graph"></a>
+# `ont-app.igraph.graph/Graph`
+<a name="querying"></a>
+## Querying
 <a name=""></a>
 <a name=""></a>
 <a name=""></a>
