@@ -124,19 +124,20 @@ Where
 (g s p) -> #{<o> ...} ;; = (match-or-traverse g s p)
 (g s p o) -> <o> iff [<s> <p> <o>] is in <g> ;; = (match-or-traverse g s p o)
 ")
+  ;; mutability
+  (mutability [g]
+    "Returns one of ::read-only ::immutable ::mutable"
+    )
+  )
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;; CONTENT MANIPULATION FUNCTIONS
+  ;; CONTENT MANIPULATION
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
-  (read-only? [g]
-    "Returns true if the membership of <g> is static 
-and add/subtract functions will throw an exception of type ::ReadOnly. 
-This may hold for example when <g> is a public endpoint for which write 
-permission is denied"
-    )
-  (add [g to-add]
-    "Returns <g>, with <to-add> added to its contents.
+
+
+(defprotocol IGraphImmutable
+    (add [g to-add]
+    "Returns <g>', with <to-add> added to its contents.
 Throws a ::ReadOnly exception if (read-only? <g>)
 Where
 <g> is a graph
@@ -144,15 +145,31 @@ Where
 "
     )
   (subtract [g to-subtract]
+    "Returns <g>' with <to-subtract> removed from its contents.
+Throws an exception if (mutability g) != ::immutable
+Where
+<g> is an immutablegraph
+<to-subtract> is in some format interpretable as a set of triples.
+"
+    ))
+
+(defprotocol IGraphMutable
+    (add! [g to-add]
+    "Returns <g>, with <to-add> added to its contents.
+Throws an exception if (mutability g) != ::mutable
+Where
+<g> is a mutable graph
+<to-add> is in some format interpretable as a set of triples.
+"
+    )
+  (subtract! [g to-subtract]
     "Returns <g> with <to-subtract> removed from its contents.
 Throws a ::ReadOnly exception if (read-only? <g>)
 Where
 <g> is a graph
 <to-subtract> is in some format interpretable as a set of triples.
 "
-    )
-  )
-
+    ))
 
 (defprotocol IGraphSet
   "Basic set operations between graphs."
@@ -456,12 +473,11 @@ Where
   "Returns a traversal function composed of elements specified in `comp-spec`
 Where
 <comp-spec> := {:path [<spec-element>, ...]
-                :default-fn <traversal-fn-generator>
                 <spec-element> {:fn <traversal-fn>
                                 :doc <docstring>
                                 :into <initial-acc> (default [])
-                                :local-context <context> (default {})
-                                :update-global-context <update-fn> (default nil)
+                                :local-context-fn <local-fn> (default nil)
+                                :update-global-context <global-fn> ( default nil)
                                }
                 }
 <spec-element> is typically a keyword naming a stage in the traversal, though
@@ -477,9 +493,12 @@ Where
   between stages in a composed traversal.
 <initial-acc> is the (usually empty) container used to initial the acc
   of the traversal stage being specified
+<local-context-fn> := [global-context] -> <local-context>
+<update-global-context> := [global-context local-context] -> <global-context>'
+<local-context> is the context for a given stage of the traversal
+<global-context> carries over between traversal stages.
 Examples 
 (def comp-spec  {
-                    :default-fn traverse-link
                     :isa? {:fn (maybe-traverse-link :isa)
                           :doc `traverses an isa link, if it exists`
                           :local-context {:doc `traversing an isa link`}
@@ -489,14 +508,14 @@ Examples
                          }
                     :subClassOf* {:fn (transitive-closure :subClassOf)
                                   :doc 'traverses 0 or more subClassof links'
-                                  :local-context {:doc 'traversing subClassOf*'}
+                                  :local-context-fn (fn [c] {:doc 'traversing subClassOf*'})
                                   :into #{}
                                   :update-global-context
                                   (fn [gc lc] (assoc gc 
                                                :status :followed-subclassof))
                                   }
                      }})
-(traveral-comp (merge comp-spec
+(traversal-comp (merge comp-spec
                       {:path [:isa? :subClassOf*]
                        :doc 'Traverses the chain of subsumption links for an instance or class'
                       }))
@@ -539,21 +558,21 @@ An inferred 'uncle' relation.
           ;; else there's more path
           (let [p (first path)
                 p-spec (or (comp-spec p) {})
-                c (or (:local-context p-spec)
-                      {})
+                c (if-let [lcfn (:local-context-fn p-spec)]
+                    (lcfn c)
+                    {})
                 f (cond
                     (fn? p) p
-                    (keyword? p) (traverse-link p)
                     :default
                     (or (:fn p-spec)
-                        (:default-fn comp-spec)))
+                        (traverse-link p)
+                        ))
                 _ (assert f)
                 a (or (:into (comp-spec p)) []) ;; breadth-first by default
-                a' (traverse g f c a q )
                 ]
             (recur c
                    (rest path)
-                   a')))))))
+                   (traverse g f c a q))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; MATCH-OR-TRAVERSE INVOCATION
@@ -603,7 +622,7 @@ Informs p-dispatcher
     }
    (declare unique)
    (let [seek-o (fn seek-o [context acc]
-                (clojure.set/intersection acc #{o}))
+                  (clojure.set/intersection acc #{o}))
          ]
          (unique (traverse g p {:seek seek-o} #{} [s])))))
 

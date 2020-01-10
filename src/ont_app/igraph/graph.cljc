@@ -17,7 +17,6 @@ The core type declaration:
   (get-o [g s p] (get-in (.contents g) [s p]))
   (ask [g s p o] (get-in (.contents g) [s p o]))
   (query [g q] (query-graph g q))
-  (read-only? [g] false)
   (add [g to-add] (add-to-graph g to-add))
   (subtract [g to-subtract] (remove-from-graph g to-subtract))
   
@@ -50,10 +49,10 @@ The core type declaration:
               intersection
               invoke
               match-or-traverse
+              mutability
               normal-form
               query
-              read-only?
-              reduce-s-p-o
+              reduce-spo
               remove-from-graph
               subjects
               subtract
@@ -72,19 +71,16 @@ The core type declaration:
 (declare get-schema)
 (declare get-contents)
 
-(deftype Graph [schema contents]
-  
+(deftype Graph [contents]
+
   igraph/IGraph
   (normal-form [g] (get-contents g)) 
-  (subjects [g] (keys (get-contents g)))
+  (subjects [g] (into #{} (seq (keys (get-contents g)))))
   (get-p-o [g s] (get (get-contents g) s))
   (get-o [g s p] (get-in (get-contents g) [s p]))
   (ask [g s p o] (get-in (get-contents g) [s p o]))
   (query [g q] (query-graph g q))
-  (read-only? [g] false)
-  (add [g to-add] (add-to-graph g to-add))
-  (subtract [g to-subtract] (remove-from-graph g to-subtract))
-
+  (mutability [g] ::igraph/immutable)
   
   #?(:clj clojure.lang.IFn
      :cljs cljs.core/IFn)
@@ -92,6 +88,10 @@ The core type declaration:
   (invoke [g s] (get-p-o g s))
   (invoke [g s p] (match-or-traverse g s p))
   (invoke [g s p o] (match-or-traverse g s p o))
+
+  igraph/IGraphImmutable
+  (add [g to-add] (add-to-graph g to-add))
+  (subtract [g to-subtract] (remove-from-graph g to-subtract))
   
   igraph/IGraphSet
   (union [g1 g2] (add-to-graph g1 (g2)))
@@ -102,13 +102,6 @@ The core type declaration:
 (defn make-error [msg]
   #?(:clj (Exception. msg)
      :cljs (js/Error msg)))
-
-(defn get-schema [g]
-  "Returns (.schema g) or (.-schema g) appropriate to clj/cljs"
-  #?(:clj
-     (.schema g)
-     :cljs
-     (.-schema g)))
 
 (defn get-contents [g]
   "Returns (.contents g) or (.-contents g) appropriate to clj/cljs"
@@ -125,27 +118,24 @@ The core type declaration:
   
   
 (defn make-graph
-  "Returns <graph>, intialized per optional <schema> and <contents>
+  "Returns <graph>, intialized per optional <contents>
   Where
   <graph> is an instance of the `Graph` type, which implments `IGraph`, `Ifn` and `ISet`
-  <schema> is not presently used, but may be a useful place for app-specific
-    metadata
   <contents> is a normal-form representation of initial contents.
     see also igraph/normal-form.
   "
-  ([&{:keys [schema contents]
-      :or {schema [::subject ::predicate ::object] ;; TODO make this relevant
-           contents {}}}]
+  ([&{:keys [contents]
+      :or {contents {}}}]
    {:pre [(= (triples-format contents) :normal-form)]
     }
-   (Graph. schema (with-meta contents {::igraph/triples-format :normal-form}))
+   (Graph. (with-meta contents {::igraph/triples-format :normal-form}))
    ))
 
 
 (defn vector-of-triples [g]
   "Returns (g) as [[<s> <p> <o>]...]"
   (with-meta
-    (reduce-s-p-o
+    (reduce-spo
      (fn [v s p o] (conj v [s p o]))
      []
      g)
@@ -169,7 +159,6 @@ The core type declaration:
                   (integrate m2))))
           ]
     (make-graph
-     :schema (get-schema g)
      :contents (merge-tree (g) to-add))))
 
 
@@ -188,7 +177,6 @@ Where <triples> := [<v> ....]
                                  (partition 2 (rest v))))
         ]
     (make-graph
-     :schema (get-schema g)
      :contents (reduce collect-vector (get-contents g) triples))))
 
 (defmethod add-to-graph [Graph :vector] [g triple-spec]
@@ -261,7 +249,6 @@ Where
     (if (empty? to-remove)
       g
       (make-graph
-       :schema (get-schema g)
        :contents (reduce (partial dissoc-shared-keys [])
                          (g)
                          (shared-keys (g) to-remove))))))
@@ -292,7 +279,6 @@ Note:
       g
       ;; else
       (make-graph
-       :schema (get-schema g)
        :contents (reduce collect-vector (get-contents g) triples)))))
 
 (defmethod remove-from-graph [Graph :vector]
@@ -306,7 +292,6 @@ Note:
       (let [contents (-dissoc-in (get-contents g) to-remove)
             ]
         (make-graph
-         :schema (get-schema g)
          :contents (-dissoc-in (get-contents g)
                                to-remove))))))
 
@@ -326,11 +311,16 @@ Note:
   [g1 g2]
   (let [collect-p
         (fn [s acc p]
-          (assoc-in acc
-                    [s p]
-                    (set/intersection
-                     (set (get-in (g1) [s p]))
-                     (set (get-in (g2) [s p])))))
+          (let [_intersection
+                (set/intersection
+                 (set (get-in (g1) [s p]))
+                 (set (get-in (g2) [s p])))
+                ]
+            (if (empty? _intersection)
+              acc
+              (assoc-in acc
+                        [s p]
+                        _intersection))))
         collect-s
         (fn [acc s]
           (reduce (partial collect-p s)
@@ -338,7 +328,6 @@ Note:
                   (shared-keys (g1 s) (g2 s))))
         ]
     (make-graph
-     :schema (get-schema g1)
      :contents (reduce collect-s {} (shared-keys (g1) (g2))))))
 
 
