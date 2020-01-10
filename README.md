@@ -7,13 +7,13 @@ loom, ...)
 It also defines a `Graph` datatype which implements `IGraph`.
 
 ## Contents
-- ### [Dependencies](#Dependencies)
-- ### [Motivation](#Motivation)
+- ### [Dependencies](#h2-dependencies)
+- ### [Motivation](#h2-motivation)
 - ### [The IGraph protocol](#The_IGraph_protocol)
   - #### [Methods summary](#IGraph_methods_summary)
   - #### [Member access](#Member_access)
     - ##### [Normal form](#Normal_form)
-    - ##### [Tractability](#Tractability)
+    - ##### [Tractability](#h4-tractability)
     - ##### [`subjects`](#subjects_method)
     - ##### [`get-p-o`](#get-p-o_method)
     - ##### [`get-o`](#get-o_method)
@@ -41,38 +41,38 @@ It also defines a `Graph` datatype which implements `IGraph`.
 - ### [Traversal](#Traversal)
   - #### [The `traverse` function](#traverse_function)
   - #### [Traversal functions](#Traversal_functions)
-    - ##### [context](#context)
+    - ##### [context](#h4-context)
     - ##### [The queue](#queue)
   - #### [Traversal utilities](#Traversal_utilities)
-    - ##### [`transitive-closure`](#transitive-closure)
-    - ##### [`traverse-link`](#traverse-link)
-    - ##### [`maybe-traverse-link`](#maybe-traverse-link)
-    - ##### [`traverse-or`](#traverse-or)
+    - ##### [`transitive-closure`](#h4-transitive-closure)
+    - ##### [`traverse-link`](#h4-traverse-link)
+    - ##### [`maybe-traverse-link`](#h4-maybe-traverse-link)
+    - ##### [`traverse-or`](#h4-traverse-or)
   - #### [Traversal composition with `t-comp`](#Traversal_composition)
     - ##### [short form](#t-comp_short_form)
     - ##### [long form](#t-comp_long_form)
   - #### [Using traversal functions as a `p` argument to `invoke`](#traversal-fn-as-p)
 - ### [cardinality-1 utilites](#cardinality-1_utilities)
-  - #### [`unique`](#unique)
-  - #### [`flatten-description`](#flatten-description)
-  - #### [`normalize-flat-description`](#normalize-flat-description)
-  - #### [`assert-unique`](#assert-unique)
+  - #### [`unique`](#h3-unique)
+  - #### [`flatten-description`](#h3-flatten-description)
+  - #### [`normalize-flat-description`](#h3-normalize-flat-description)
+  - #### [`assert-unique`](#h3-assert-unique)
 - ### [I/O](#i-o)
-  - #### [`write-to-file`](#write-to-file)
-  - #### [`read-from-file`](#read-from-file)
+  - #### [`write-to-file`](#h3-write-to-file)
+  - #### [`read-from-file`](#h3-read-from-file)
 - ### [Other utilities](#Other_utilities)
-  - #### [`reduce-spo`](#reduce-spo)
-- ### [Implementations](#Implementations)
+  - #### [`reduce-spo`](#h3-reduce-spo)
+- ### [Implementations](#h2-implementations)
   - #### [`ont-app.igraph.graph/Graph`](#Graph)
-    - ##### [Graph creation](#Graph_creation)
-    - ##### [Querying](#Querying)
-  - #### [sparql-client](#sparql-client)
-  - #### [datascript-graph](#datascript-graph)
-- ### [Future Work](#Future_work)
+    - ##### [Graph creation](#h4-graph-creation)
+    - ##### [Querying](#h4-querying)
+  - #### [sparql-client](#h3-sparql-client)
+  - #### [datascript-graph](#h3-datascript-graph)
+- ### [Future Work](#h2-future-work)
 
 ---
 
-<a name="Dependencies"></a>
+<a name="h2-dependencies"></a>
 ## Dependencies
 
 This is deployed to [clojars](https://clojars.org/ont-app/igraph):
@@ -93,7 +93,7 @@ Require thus:
            
 ```
 
-<a name="Motivation"></a>
+<a name="h2-motivation"></a>
 ## Motivation
 
 One of the defining characteristics of Clojure is that it revolves
@@ -191,7 +191,7 @@ What I'm aiming for here is a form that's
 - lends itself to expressing and thinking about basic set operations
 on graphs.
 
-<a name="Tractability"></a>
+<a name="h4-tractability"></a>
 #### Tractability
 
 It is expected that while many implementations of IGraph will be
@@ -710,7 +710,7 @@ Here's a possible definition of subClassOf*:
        ]))
 ```
 
-<a name="context"></a>
+<a name="h4-context"></a>
 #### Context
 
 The `context` argument to `traverse` and its traversal function is a
@@ -758,7 +758,7 @@ logic to prune and re-order the queue to optimize the traversal.
 IGraph provides utilities to express several common types of traversal
 functions.
 
-<a name="transitive-closure"></a>
+<a name="h4-transitive-closure"></a>
 #### `transitive-closure`
 
 - `(trasitive-closure p)` -> `(fn [g context acc to-visit] ...) ->
@@ -775,7 +775,7 @@ thus:
 (def subClassOf* (igraph/transitive-closure :subClassOf))
 ```
 
-<a name="traverse-link"></a>
+<a name="h4-traverse-link"></a>
 ### `traverse-link`
 
 - `(traverse-link p)` -> (fn [g context acc queue] ...) -> [context
@@ -794,7 +794,7 @@ The function returned here will accumulate all `o` s.t. for all `s` in
 >
 ```
 
-<a name="maybe-traverse-link"></a>
+<a name="h4-maybe-traverse-link"></a>
 #### `maybe-traverse-link`
 
 - `(maybe-traverse-link p)` -> (fn [g context acc queue] ...) ->
@@ -811,7 +811,7 @@ Matches 0 or 1 occurrances of `p`:
 >
 ```
 
-<a name="traverse-or"></a>
+<a name="h4-traverse-or"></a>
 #### `traverse-or`
 
 - `(traverse-or & ps)` -> (fn [g context acc queue] ...) -> [context
@@ -984,7 +984,7 @@ The following utilities are provided to help with this:
 - `(assert-unique g s p o) - replaces one singleton object with
   another.
 
-<a name="unique"></a>
+<a name="h3-unique"></a>
 ### `unique`
 
 The `unique` function takes a sequence and an optional `on-ambiguity`
@@ -1017,7 +1017,7 @@ easier to type:
 >
 ```
 
-<a name="flatten-description"></a>
+<a name="h3-flatten-description"></a>
 ### `flatten-description`
 
 ```
@@ -1033,7 +1033,7 @@ easier to type:
 >
 ```
 
-<a name="normalize-flat-description"></a>
+<a name="h3-normalize-flat-description"></a>
 ### `normalize-flat-description`
 
 This is the inverse of `flatten-description`:
@@ -1052,7 +1052,7 @@ This is the inverse of `flatten-description`:
 >
 ```
 
-<a name="assert-unique"></a>
+<a name="h3-assert-unique"></a>
 ### `assert-unique`
 
 We can replace one singleton value with another using `(assert-unique
@@ -1076,13 +1076,13 @@ course need to be filtered out.
 At this point, only the :clj platform is directly supported with a
 pair of functions to read/write to the file system.
 
-<a name="write-to-file"></a>
+<a name="h3-write-to-file"></a>
 ### `write-to-file`
 `(write-to-file [path g] ...) -> path`
 
 Will write an edn file with the normal form contents of `g`.
 
-<a name="read-from-file"></a>
+<a name="h3-read-from-file"></a>
 ### `read-from-file`
 
 `(read-from-file [g path] ...) -> g'`
@@ -1092,7 +1092,7 @@ Will read the normal form contents of `path` into `g`.
 <a name="Other_utilities"></a>
 ## Other utilities
 
-<a name="reduce-spo"></a>
+<a name="h3-reduce-spo"></a>
 ### `reduce-spo`
 - `(reduce-spo f acc g)` -> `acc'`, such that `f` is called on each triple in
 `g`.  Where `f` := `(fn [acc s p o]...) -> acc'`. Cf. [reduce-kv](https://clojuredocs.org/clojure.core/reduce-kv)
@@ -1103,7 +1103,7 @@ Will read the normal form contents of `path` into `g`.
 > (igraph/reduce-spo tally-triples 0 eg)
 4
 ```
-<a name="Implementations"></a>
+<a name="h2-implementations"></a>
 ## Implementations
 
 The `ont-app.igraph.graph` module makes one implementation of IGraph
@@ -1129,7 +1129,7 @@ with other IGraph implementations.
 (require '[ont-app.igraph.graph :as g])
 ```
 
-<a name="Graph_creation></a>
+<a name="h4-graph-creation"></a>
 #### Graph creation
 
 Use `make-graph` to create a new graph, with an optional `:contents`
@@ -1155,7 +1155,7 @@ eg
 The `:contents` argument must be in Normal Form.
 
 
-<a name="Querying"></a>
+<a name="h4-querying"></a>
 #### Querying
 
 Querying is done with a very simple vector-of-triples graph pattern
@@ -1190,7 +1190,7 @@ Traversal functions can be specified in `p` position:
 ```
 
 
-<a name="sparql-client"></a>
+<a name="h3-sparql-client"></a>
 ### sparql-client
 
 <https://github.com/ont-app/sparql-client>
@@ -1200,7 +1200,7 @@ endpoint](https://www.wikidata.org/wiki/Q26261192). Initializtion
 requires configuring query and update endpoints, and the query
 language is [SPARQL](https://www.wikidata.org/wiki/Q54871).
 
-<a name="datascript-graph"></a>
+<a name="h3-datascript-graph"></a>
 ### datascript-graph
 
 <https://github.com/ont-app/datascript-graph>
@@ -1210,7 +1210,7 @@ This implements IGraph for a
 representation, and may as such may need to be initialized with some
 schema declarations. Query language is datalog.
 
-<a name="Future_work"></a>
+<a name="h2-future-work"></a>
 ## Future work
 - Datomic, loom, ubergraph, and other graph-oriented libraries will be
   ported to.
