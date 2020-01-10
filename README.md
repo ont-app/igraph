@@ -71,7 +71,8 @@ It also defines a `Graph` datatype which implements `IGraph`.
 - ### [Future Work](#Future_work)
 
 ---
-<a name="Dependencies"/>
+
+<a name="Dependencies"></a>
 ## Dependencies
 
 This is deployed to [clojars](https://clojars.org/ont-app/igraph):
@@ -92,7 +93,7 @@ Require thus:
            
 ```
 
-<a name="Motivation"/>
+<a name="Motivation"></a>
 ## Motivation
 
 One of the defining characteristics of Clojure is that it revolves
@@ -116,7 +117,7 @@ This is informed to a large degree by the
 with [linked data](https://www.wikidata.org/wiki/Q515701) encoded in
 RDF, while keeping direct dependencies to a minimum.
 
-<a name="The_IGraph_protocol"</a>
+<a name="The_IGraph_protocol"></a>
 ## The IGraph protocol
 
 This protocol defines the basic operations over a graph concieved of
@@ -129,7 +130,7 @@ these identifiers adhere strictly to RDF specifications for URIs, and
 that literal values be restricted to a small set of scalars is relaxed
 quite a bit.
 
-<a name="IGraph_methods_summary"/>
+<a name="IGraph_methods_summary"></a>
 ### Methods summary
 
 The `IGraph` protocol specifies the following methods:
@@ -151,10 +152,10 @@ The `IGraph` protocol specifies the following methods:
 - `(g s p)` -> #{o ...}
 - `(g s p o)` -> truthy
 
-<a name="Member_access"/>
+<a name="Member_access"></a>
 ### Member access
 
-<a name="Normal_form"/>
+<a name="Normal_form"></a>
 #### Normal form
 
 Any implemetation of this protocol, regardless of its _native
@@ -190,7 +191,7 @@ What I'm aiming for here is a form that's
 - lends itself to expressing and thinking about basic set operations
 on graphs.
 
-<a name="Tractability"/>
+<a name="Tractability"></a>
 #### Tractability
 
 It is expected that while many implementations of IGraph will be
@@ -207,7 +208,7 @@ for any method that warrants it:
 ```
 
 
-<a name="subjects_method"/>
+<a name="subjects_method"></a>
 #### `subjects`
 
 The `subjects` method must return the complete set of subjects in the
@@ -219,7 +220,7 @@ graph (modulo tractability):
 >
 ```
 
-<a name="get-p-o_method"/>
+<a name="get-p-o_method"></a>
 #### `get-p-o`
 
 We must be able to get the p-level description of any subject with
@@ -231,7 +232,7 @@ We must be able to get the p-level description of any subject with
 >
 ```
 
-<a name="get-o_method"/>
+<a name="get-o_method"></a>
 #### `get-o`
 
 We must be able to get the o-level set of objects for any subject and
@@ -243,7 +244,7 @@ predicate with `get-o`:
 >
 ``` 
 
-<a name="ask_method"/>
+<a name="ask_method"></a>
 #### `ask`
 
 We must be able to test for whether any particular triple is in the
@@ -257,7 +258,7 @@ nil
 >
 ```
 
-<a name="query_method"/>
+<a name="query_method"></a>
 #### `query`
 
 We must be able to query the graph using a format appropriate to the
@@ -288,7 +289,7 @@ endpoint which we might call `sparql-eg`:
 > 
 ```
 
-<a name="invoke_method"/>
+<a name="invoke_method"></a>
 #### `invoke` for arities 0-3
 
 An instance of IGraph must provide `invoke` implementations as
@@ -340,7 +341,7 @@ nil
 This will often be equivalent to `ask`, but again, the "P" argument
 can be a traversal function, described [below](#traversal-fn-as-p).
 
-<a name="Content_Manipulation"/>
+<a name="Content_Manipulation"></a>
 ### Content Manipulation
 
 There a various factors to take into account when adding or removing
@@ -355,7 +356,7 @@ Naturally, other things being equal, the preferred solution is to use
 immutable graphs when it is possible to do so. The examples in this
 README will all be applied to immutable graphs.
 
-<a name="mutability_method"/>
+<a name="mutability_method"></a>
 #### `mutability`
 
 The `mutability` method returns one of the following values
@@ -366,7 +367,7 @@ The `mutability` method returns one of the following values
 - `::igraph/mutable` - the graph implements
   [IGraphMutable](#IGraphMutable)
 
-<a name="add-to-graph"/>
+<a name="add-to-graph"></a>
 #### The `add-to-graph` multimethod
 
 IGraph defines a multimethod `add-to-graph`, dispatched on the type of
@@ -403,7 +404,7 @@ Finally, we have `:vector-of-vectors`:
 Any implementation of IGraph should support adding to the graph in all
 of these formats.
 
-<a name="remove-from-graph"/>
+<a name="remove-from-graph"></a>
 #### The `remove-from-graph` multimethod
 
 IGraph also defines multimethod `remove-from-graph`, dispatched on the
@@ -431,13 +432,13 @@ all `[s * *]` or all `[s p *]`.
 
 
 
-<a name="IGraphImmutable"/>
+<a name="IGraphImmutable"></a>
 ## The IGraphImmutable protocol
 
 An add or subtract operation to an immutable graph returns a cheap
 copy of the original graph modified per the argument provided.
 
-<a name="add_method"/>
+<a name="add_method"></a>
 ### `add`
 
 Calling `(add g to-add)` must return an immutable graph such that the
@@ -479,7 +480,7 @@ We can add use Normal Form of one graph to add it to another.
 > 
 ```
 
-<a name="subtract_method"/>
+<a name="subtract_method"></a>
 #### `subtract`
 
 The multimethod `remove-from-graph` supports the `subtract` operation,
@@ -496,7 +497,7 @@ described [above](#remove-from-graph):
 >
 ```
 
-<a name="IGraphMutable"/>
+<a name="IGraphMutable"></a>
 ## The IGraphMutable protocol
 
 Some graph's native representations are implemented as mutable
@@ -509,14 +510,14 @@ inform the logic here, and the behavior should be essentially the
 same, with the exception that the graph returned is the same mutated
 object as was passed in to either of these methods.
 
-<a name="add!_method"/>
+<a name="add!_method"></a>
 ### `add!`
 
 `(add! g to-add)` -> g, where g is both the argument and return value.
 
 An error should be thrown if `(mutablility g)` != :igraph/mutable.
 
-<a name="subtract!_method"/>
+<a name="subtract!_method"></a>
 ### `subtract!`
 
 `(subtract! g to-subtract)` -> g, where g is both the argument and
@@ -524,7 +525,7 @@ return value.
 
 An error should be thrown if `(mutablility g)` != :igraph/mutable.
 
-<a name="The_IGraphSet_protocol"/>
+<a name="The_IGraphSet_protocol"></a>
 ## The IGraphSet protocol
 
 It will make sense for many implementations of IGraph also to
@@ -542,7 +543,7 @@ For purposes of demonstration, let's assume a second graph `other-eg`:
 
 I think examples of each operation should serve to describe them.
 
-<a name="IGraphSet_methods_summary"/>
+<a name="IGraphSet_methods_summary"></a>
 ### Methods summary
 - `(union g1 g2)` -> A new graph with all triples from both graphs
 - `(difference g1 g2)` -> A new graph with triples in g1 not also in
@@ -550,7 +551,7 @@ I think examples of each operation should serve to describe them.
 - `(intersection g1 g2)` -> A new graph with only triples shared in
   both graphs
 
-<a name="union_method"/>
+<a name="union_method"></a>
 ### `union`
 ```
 > (igraph/normal-form (igraph/union eg other-eg))
@@ -561,7 +562,7 @@ I think examples of each operation should serve to describe them.
 
 ``` 
 
-<a name="intersection_method"/>
+<a name="intersection_method"></a>
 ### `intersection`
 
 ```
@@ -570,7 +571,7 @@ I think examples of each operation should serve to describe them.
 >
 ```
 
-<a name="difference_method"/>
+<a name="difference_method"></a>
 ### `difference`
 ```
 > (igraph/normal-form (igraph/difference eg other-eg))
@@ -582,7 +583,7 @@ I think examples of each operation should serve to describe them.
 >
 ```
 
-<a name="Traversal"/>
+<a name="Traversal"></a>
 ## Traversal
 
 Clojure and other functional programming languages have a
@@ -641,7 +642,7 @@ eg-with-types
 Our `eg-with-types` now provides a bit more context for what's going
 on with our heroes John and Mary.
 
-<a name="traverse_function"/>
+<a name="traverse_function"></a>
 ### The `traverse` function
 
 Here's an example of how the `traverse` function works, starting with
@@ -664,7 +665,7 @@ The arguments for `traverse` are
 - `acc` - accumulates the resulting value of the traversal
 - `queue` - the starting queue
 
-<a name="Traversal_functions"/>
+<a name="Traversal_functions"></a>
 #### Traversal functions
 
 The traversal function takes 4 arguments and returns a vector of
@@ -709,7 +710,7 @@ Here's a possible definition of subClassOf*:
        ]))
 ```
 
-<a name="context"/>
+<a name="context"></a>
 #### Context
 
 The `context` argument to `traverse` and its traversal function is a
@@ -737,7 +738,7 @@ blackboard to communicate between iterations of the traversal. As an
 example, you may want to prune and re-order your queue based on a set
 of heuristics, details of which are stored in the context.
 
-<a name="queue"/>
+<a name="queue"></a>
 #### The queue
 
 The `queue` argument must be sequential, but is otherwise
@@ -751,13 +752,13 @@ depth-first tranversal.
 More sophisticated traversal functions may use the context to inform
 logic to prune and re-order the queue to optimize the traversal.
 
-<a name="Traversal_utilities"/>
+<a name="Traversal_utilities"></a>
 ### Traversal utilities
 
 IGraph provides utilities to express several common types of traversal
 functions.
 
-<a name="transitive-closure"/>
+<a name="transitive-closure"></a>
 #### `transitive-closure`
 
 - `(trasitive-closure p)` -> `(fn [g context acc to-visit] ...) ->
@@ -774,7 +775,7 @@ thus:
 (def subClassOf* (igraph/transitive-closure :subClassOf))
 ```
 
-<a name="traverse-link"/>
+<a name="traverse-link"></a>
 ### `traverse-link`
 
 - `(traverse-link p)` -> (fn [g context acc queue] ...) -> [context
@@ -793,7 +794,7 @@ The function returned here will accumulate all `o` s.t. for all `s` in
 >
 ```
 
-<a name="maybe-traverse-link"/>
+<a name="maybe-traverse-link"></a>
 #### `maybe-traverse-link`
 
 - `(maybe-traverse-link p)` -> (fn [g context acc queue] ...) ->
@@ -810,7 +811,7 @@ Matches 0 or 1 occurrances of `p`:
 >
 ```
 
-<a name="traverse-or"/>
+<a name="traverse-or"></a>
 #### `traverse-or`
 
 - `(traverse-or & ps)` -> (fn [g context acc queue] ...) -> [context
@@ -831,12 +832,12 @@ subsumed-by
 >
 ```
 
-<a name="Traversal_composition"/>
+<a name="Traversal_composition"></a>
 ### Traversal composition with `t-comp`
 Composition functions are composable with a 'short form' and a 'long
 form'.
 
-<a name="t-comp_short_form"/>
+<a name="t-comp_short_form"></a>
 #### short form
 
 Short-form composition can be used when the traversal function meets
@@ -857,7 +858,7 @@ Such functions can be called as a simple vector:
 >
 ```
 
-<a name="t-comp_long_form"/>
+<a name="t-comp_long_form"></a>
 #### long form
 
 In cases where one wants to compose a traversal function that cannot
@@ -920,7 +921,7 @@ element in 'p' position in `g`.
   the current stage of traversal may be of interest to subsequent
   stages.
 
-<a name="traversal-fn-as-p"/>
+<a name="traversal-fn-as-p"></a>
 ### Using traversal functions as a `p` argument to `invoke`
 
 Recall that implementations of IGraph should provide `invoke`
@@ -961,7 +962,7 @@ So given the traversal functions in the examples above:
 >
 ```
 
-<a name="cardinality-1_utilities"/>
+<a name="cardinality-1_utilities"></a>
 ## cardinality-1 utilites
 
 Requiring normal form to provide a set as its 3rd-tier representation
@@ -983,7 +984,7 @@ The following utilities are provided to help with this:
 - `(assert-unique g s p o) - replaces one singleton object with
   another.
 
-<a name="unique"/>
+<a name="unique"></a>
 ### `unique`
 
 The `unique` function takes a sequence and an optional `on-ambiguity`
@@ -1016,7 +1017,7 @@ easier to type:
 >
 ```
 
-<a name="flatten-description"/>
+<a name="flatten-description"></a>
 ### `flatten-description`
 
 ```
@@ -1032,7 +1033,7 @@ easier to type:
 >
 ```
 
-<a name="normalize-flat-description"/>
+<a name="normalize-flat-description"></a>
 ### `normalize-flat-description`
 
 This is the inverse of `flatten-description`:
@@ -1051,7 +1052,7 @@ This is the inverse of `flatten-description`:
 >
 ```
 
-<a name="assert-unique"/>
+<a name="assert-unique"></a>
 ### `assert-unique`
 
 We can replace one singleton value with another using `(assert-unique
@@ -1064,7 +1065,7 @@ g s p o) -> g'`:
 >
 ```
 
-<a name="i-o"/>
+<a name="i-o"></a>
 ## I/O
 
 In general writing the normal form of a graph to a stream and applying
@@ -1075,23 +1076,23 @@ course need to be filtered out.
 At this point, only the :clj platform is directly supported with a
 pair of functions to read/write to the file system.
 
-<a name="write-to-file"/>
+<a name="write-to-file"></a>
 ### `write-to-file`
 `(write-to-file [path g] ...) -> path`
 
 Will write an edn file with the normal form contents of `g`.
 
-<a name="read-from-file"/>
+<a name="read-from-file"></a>
 ### `read-from-file`
 
 `(read-from-file [g path] ...) -> g'`
 
 Will read the normal form contents of `path` into `g`.
 
-<a name="Other_utilities"/>
+<a name="Other_utilities"></a>
 ## Other utilities
 
-<a name="reduce-spo"/>
+<a name="reduce-spo"></a>
 ### `reduce-spo`
 - `(reduce-spo f acc g)` -> `acc'`, such that `f` is called on each triple in
 `g`.  Where `f` := `(fn [acc s p o]...) -> acc'`. Cf. [reduce-kv](https://clojuredocs.org/clojure.core/reduce-kv)
@@ -1102,7 +1103,7 @@ Will read the normal form contents of `path` into `g`.
 > (igraph/reduce-spo tally-triples 0 eg)
 4
 ```
-<a name="Implementations"/>
+<a name="Implementations"></a>
 ## Implementations
 
 The `ont-app.igraph.graph` module makes one implementation of IGraph
@@ -1113,7 +1114,7 @@ protocol.
 Other implementations are planned, and I'd be interested to learn of
 any implementations published by other parties.
 
-<a name="Graph"/>
+<a name="Graph"></a>
 ### `ont-app.igraph.graph/Graph`
 
 The IGraph library comes with `ont-app.igraph.graph`, whose Graph
@@ -1128,7 +1129,7 @@ with other IGraph implementations.
 (require '[ont-app.igraph.graph :as g])
 ```
 
-<a name="Graph_creation">
+<a name="Graph_creation></a>
 #### Graph creation
 
 Use `make-graph` to create a new graph, with an optional `:contents`
@@ -1154,7 +1155,7 @@ eg
 The `:contents` argument must be in Normal Form.
 
 
-<a name="Querying"/>
+<a name="Querying"></a>
 #### Querying
 
 Querying is done with a very simple vector-of-triples graph pattern
@@ -1189,7 +1190,7 @@ Traversal functions can be specified in `p` position:
 ```
 
 
-<a name="sparql-client"/>
+<a name="sparql-client"></a>
 ### sparql-client
 
 <https://github.com/ont-app/sparql-client>
@@ -1199,7 +1200,7 @@ endpoint](https://www.wikidata.org/wiki/Q26261192). Initializtion
 requires configuring query and update endpoints, and the query
 language is [SPARQL](https://www.wikidata.org/wiki/Q54871).
 
-<a name="datascript-graph"/>
+<a name="datascript-graph"></a>
 ### datascript-graph
 
 <https://github.com/ont-app/datascript-graph>
@@ -1209,7 +1210,7 @@ This implements IGraph for a
 representation, and may as such may need to be initialized with some
 schema declarations. Query language is datalog.
 
-<a name="Future_work"/>
+<a name="Future_work"></a>
 ## Future work
 - Datomic, loom, ubergraph, and other graph-oriented libraries will be
   ported to.
