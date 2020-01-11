@@ -24,10 +24,12 @@
 
 (deftest readme-examples
   (testing "core test readme"
-    (ct/readme))
+    (ct/readme)
+    (ct/readme-immutable)
+    (ct/readme-set-operations))
   (testing "query"
-    (is (= (igraph/query @ct/eg [[:?person :isa :person]])
-           #{{:?person :mary} {:?person :john}})))
+    (is (= (igraph/query @ct/eg [[:?person ::ct/isa ::ct/person]])
+           #{{:?person ::ct/mary} {:?person ::ct/john}})))
   )
 
 
