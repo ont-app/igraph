@@ -2,7 +2,7 @@
   {
    ;; this metadata can be used by downstream libraries that rely on RDF URIs...
    :vann/preferredNamespacePrefix
-   "igraph-test"
+   "ont-app.igraph.core-test" ;; matches :: declarations directly
    :vann/preferredNamespaceUri
    "http://rdf.naturallexicon.org/ont-app/igraph/core-test#"
    }
@@ -16,18 +16,25 @@
 
 (def subClassOf* (igraph/transitive-closure ::subClassOf))
 
-(def eg-data {::john {::isa #{::person}, ::likes #{::beef}},
-              ::mary {::isa #{::person}, ::likes #{::chicken}}})
+(def eg-data "Initial data for the `eg` graph"
+  {::john {::isa #{::person}, ::likes #{::beef}},
+   ::mary {::isa #{::person}, ::likes #{::chicken}}})
 
-(def eg (atom nil))
-(def other-eg-data {::mary {::isa #{::person}, ::likes #{::pork}},
-                    ::waldo {::isa #{::person}, ::likes #{::beer}}})
+(def eg "Holds examples from the README"
+  (atom nil))
 
-(def other-eg (atom nil))
-;; used to test IGraphSet operations.
-;; Should contain other-eg-data.
+(def other-eg-data "Contents of the `other-eg` graph"
+  {::mary {::isa #{::person}, ::likes #{::pork}},
+   ::waldo {::isa #{::person}, ::likes #{::beer}}})
+
+(def other-eg
+  "Used to deftest set operations per the README.
+  Populated with `other-eg-data`"
+  (atom nil))
+
 
 (def types-data
+  "Contents of the `eg-with-types` graph"
   {
    ::beef {::subClassOf #{::meat}},
    ::chicken {::subClassOf #{::meat}}
@@ -40,7 +47,9 @@
    ::person {::subClassOf #{::thing}},
    })
 
-(def eg-with-types (atom nil))
+(def eg-with-types
+  "Used to test examples from the README"
+  (atom nil))
 
 
 (deftest readme
@@ -185,7 +194,7 @@
 
 (deftest readme-immutable
   (testing "IGraphImmutable"
-    (when (= (igraph/mutability @eg) :igraph/immutable)
+    (when (= (igraph/mutability @eg) ::igraph/immutable)
       (is (= (satisfies? igraph/IGraphImmutable @eg)
              true))
       (is (= (igraph/normal-form 
@@ -204,6 +213,42 @@
              {::john {::isa #{::person}}, 
               ::mary {::isa #{::person}, ::likes #{::chicken}}}))
       ))) ;; immutable
+
+
+(def mutable-eg "Initialized with `eg-data`. Test for mutable graphs"
+    (atom nil))
+
+(deftest readme-mutable
+  (testing "IGraphMutable"
+    ;; requires a dedicated @mutable-eg
+    (when (@mutable-eg)
+      (is (= (igraph/mutability @mutable-eg)
+             ::igraph/mutable))
+      (is (= (satisfies? igraph/IGraphMutable @mutable-eg)
+             true))
+      (is (= (igraph/normal-form @mutable-eg)
+             eg-data))
+      (is (= (igraph/normal-form 
+              (igraph/add! 
+               @mutable-eg
+               [[::chicken ::subclass-of ::meat]
+                [::beef ::subclass-of ::meat]
+                ]))
+             {::john {::isa #{::person}, ::likes #{::beef}},
+              ::mary {::isa #{::person}, ::likes #{::chicken}},
+              ::chicken {::subclass-of #{::meat}},
+              ::beef {::subclass-of #{::meat}}}))
+      (is (= (igraph/normal-form
+              (igraph/subtract!
+               @mutable-eg
+               [[::chicken ::subclass-of ::meat]
+                [::beef ::subclass-of ::meat]
+                ]))
+             eg-data))
+      (is (= (igraph/normal-form (igraph/subtract! @mutable-eg [::john]))
+             {::mary {::isa #{::person}, ::likes #{::chicken}}}))
+
+    )))
 
 (deftest readme-set-operations
   (testing "IGraphSet"
