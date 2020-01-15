@@ -75,7 +75,9 @@
              {::john {::isa #{::person}, ::likes #{::beef}},
               ::mary {::isa #{::person}, ::likes #{::chicken}}}))
       (is (= (igraph/subjects @eg)
-             #{::john ::mary}))
+             `(::john ::mary)))
+      (is (= (type (igraph/subjects @eg))
+             clojure.lang.LazySeq))
       (is (= (igraph/get-p-o @eg ::john)
              {::isa #{::person}, ::likes #{::beef}}))
       (is (= (igraph/get-o @eg ::john ::isa)

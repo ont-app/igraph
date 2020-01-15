@@ -137,7 +137,7 @@ The `IGraph` protocol specifies the following methods:
 
 #### Member access
 - `(normal-form g)` -> `{s {p #{o...}...}...}`
-- `(subjects g)` -> `(s ...)`, a collection of subjects
+- `(subjects g)` -> `(s ...)`, a lazy sequence of subjects
 - `(get-p-o g s)` -> `{p #{o...} ...}`
 - `(get-o g s p)` -> `#{o ...}`
 - `(ask g s p o)` -> truthy
@@ -211,12 +211,14 @@ for any method that warrants it:
 <a name="subjects_method"></a>
 #### `subjects`
 
-The `subjects` method must return the complete set of subjects in the
-graph (modulo tractability):
+The `subjects` method must return a lazy sequence of complete set of
+subjects in the graph (modulo tractability):
 
 ```
 > (igraph/subjects eg)
-#{:john :mary}
+`(:john :mary)
+> (type (igraph/subjects eg))
+clojure.lang.LazySeq
 >
 ```
 

@@ -12,7 +12,7 @@ The core type declaration:
   
   IGraph
   (normal-form [g] (.contents g))
-  (subjects [g] (keys (.contents g)))
+  (subjects [g] (lazy-seq (keys (.contents g))))
   (get-p-o [g s] (get (.contents g) s))
   (get-o [g s p] (get-in (.contents g) [s p]))
   (ask [g s p o] (get-in (.contents g) [s p o]))
@@ -75,7 +75,7 @@ The core type declaration:
 
   igraph/IGraph
   (normal-form [g] (get-contents g)) 
-  (subjects [g] (into #{} (seq (keys (get-contents g)))))
+  (subjects [g] (lazy-seq (keys (get-contents g))))
   (get-p-o [g s] (get (get-contents g) s))
   (get-o [g s p] (get-in (get-contents g) [s p]))
   (ask [g s p o] (get-in (get-contents g) [s p o]))
