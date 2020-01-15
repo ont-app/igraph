@@ -223,7 +223,7 @@
 (deftest readme-mutable
   (testing "IGraphMutable"
     ;; requires a dedicated @mutable-eg
-    (when (@mutable-eg)
+    (when @mutable-eg
       (is (= (igraph/mutability @mutable-eg)
              ::igraph/mutable))
       (is (= (satisfies? igraph/IGraphMutable @mutable-eg)
