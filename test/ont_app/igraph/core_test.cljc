@@ -2,7 +2,7 @@
   {
    ;; this metadata can be used by downstream libraries that rely on RDF URIs...
    :vann/preferredNamespacePrefix
-   "ont-app.igraph.core-test" ;; matches :: declarations directly
+   "ig-ctest" ;; matches :: declarations directly
    :vann/preferredNamespaceUri
    "http://rdf.naturallexicon.org/ont-app/igraph/core-test#"
    }
@@ -20,18 +20,22 @@
 
 ;; TEST EXAMPLES IN THE README
 
-(def subClassOf* (igraph/transitive-closure ::subClassOf))
+(def subClassOf* (igraph/transitive-closure :ig-ctest/subClassOf))
 
 (def eg-data "Initial data for the `eg` graph"
-  {::john {::isa #{::person}, ::likes #{::beef}},
-   ::mary {::isa #{::person}, ::likes #{::chicken}}})
+  {:ig-ctest/john
+   {:ig-ctest/isa #{:ig-ctest/person}, :ig-ctest/likes #{:ig-ctest/beef}},
+   :ig-ctest/mary
+   {:ig-ctest/isa #{:ig-ctest/person}, :ig-ctest/likes #{:ig-ctest/chicken}}})
 
 (def eg "Holds examples from the README"
   (atom nil))
 
 (def other-eg-data "Contents of the `other-eg` graph"
-  {::mary {::isa #{::person}, ::likes #{::pork}},
-   ::waldo {::isa #{::person}, ::likes #{::beer}}})
+  {:ig-ctest/mary
+   {:ig-ctest/isa #{:ig-ctest/person}, :ig-ctest/likes #{:ig-ctest/pork}},
+   :ig-ctest/waldo
+   {:ig-ctest/isa #{:ig-ctest/person}, :ig-ctest/likes #{:ig-ctest/beer}}})
 
 (def other-eg
   "Used to deftest set operations per the README.
@@ -42,15 +46,15 @@
 (def types-data
   "Contents of the `eg-with-types` graph"
   {
-   ::beef {::subClassOf #{::meat}},
-   ::chicken {::subClassOf #{::meat}}
-   ::pork {::subClassOf #{::meat}},
-   ::meat {::subClassOf #{::food}},
-   ::beer {::subClassOf #{::beverage}},
-   ::food {::subClassOf #{::consumable}},
-   ::beverage {::subClassOf #{::consumable}},
-   ::consumable {::subClassOf #{::thing}},
-   ::person {::subClassOf #{::thing}},
+   :ig-ctest/beef {:ig-ctest/subClassOf #{:ig-ctest/meat}},
+   :ig-ctest/chicken {:ig-ctest/subClassOf #{:ig-ctest/meat}}
+   :ig-ctest/pork {:ig-ctest/subClassOf #{:ig-ctest/meat}},
+   :ig-ctest/meat {:ig-ctest/subClassOf #{:ig-ctest/food}},
+   :ig-ctest/beer {:ig-ctest/subClassOf #{:ig-ctest/beverage}},
+   :ig-ctest/food {:ig-ctest/subClassOf #{:ig-ctest/consumable}},
+   :ig-ctest/beverage {:ig-ctest/subClassOf #{:ig-ctest/consumable}},
+   :ig-ctest/consumable {:ig-ctest/subClassOf #{:ig-ctest/thing}},
+   :ig-ctest/person {:ig-ctest/subClassOf #{:ig-ctest/thing}},
    })
 
 (def eg-with-types
@@ -62,44 +66,59 @@
   ;; all the examples in the README should work as advertised
   (when (and @eg @other-eg @eg-with-types)
     (testing "implementation independent"
-      (is (= (igraph/triples-format {::john {::likes# #{::beef}}})
+      (is (= (igraph/triples-format
+              {:ig-ctest/john {:ig-ctest/likes# #{:ig-ctest/beef}}})
              :normal-form))
-      (is (= (igraph/triples-format [::john ::likes ::beef])
+      (is (= (igraph/triples-format
+              [:ig-ctest/john :ig-ctest/likes :ig-ctest/beef])
              :vector))
-      (is (= (igraph/triples-format [::john ::isa ::person ::likes ::beef])
+      (is (= (igraph/triples-format
+              [:ig-ctest/john
+               :ig-ctest/isa :ig-ctest/person :ig-ctest/likes :ig-ctest/beef])
              :vector))
-      (is (= (igraph/triples-format  [[::john ::isa ::person] [::mary ::isa ::person]])
+      (is (= (igraph/triples-format
+              [[:ig-ctest/john :ig-ctest/isa :ig-ctest/person]
+               [:ig-ctest/mary :ig-ctest/isa :ig-ctest/person]])
              :vector-of-vectors))
-      (is (= (igraph/triples-removal-format [::john])
+      (is (= (igraph/triples-removal-format [:ig-ctest/john])
              :underspecified-triple))
-      (is (= (igraph/triples-removal-format [::john ::likes])
+      (is (= (igraph/triples-removal-format [:ig-ctest/john :ig-ctest/likes])
              :underspecified-triple))
       )
     (testing "eg-graph"
       (is (= (igraph/normal-form @eg) eg-data))
       (is (= (igraph/normal-form @eg)
-             {::john {::isa #{::person}, ::likes #{::beef}},
-              ::mary {::isa #{::person}, ::likes #{::chicken}}}))
+             {:ig-ctest/john {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/beef}},
+              :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/chicken}}}))
       (is (= (igraph/subjects @eg)
-             `(::john ::mary)))
+             `(:ig-ctest/john :ig-ctest/mary)))
       (is (= (type (igraph/subjects @eg))
              cljs-LazySeq))
-      (is (= (igraph/get-p-o @eg ::john)
-             {::isa #{::person}, ::likes #{::beef}}))
-      (is (= (igraph/get-o @eg ::john ::isa)
-             #{::person}))
-      (is (not (nil? (igraph/ask @eg ::john ::likes ::beef))))
-      (is (= (igraph/ask @eg ::john ::likes ::chicken)
+      (is (= (igraph/get-p-o @eg :ig-ctest/john)
+             {:ig-ctest/isa #{:ig-ctest/person},
+              :ig-ctest/likes #{:ig-ctest/beef}}))
+      (is (= (igraph/get-o @eg :ig-ctest/john :ig-ctest/isa)
+             #{:ig-ctest/person}))
+      (is (not (nil? (igraph/ask @eg
+                                 :ig-ctest/john
+                                 :ig-ctest/likes
+                                 :ig-ctest/beef))))
+      (is (= (igraph/ask @eg :ig-ctest/john :ig-ctest/likes :ig-ctest/chicken)
              nil))
       (is (= (@eg)
-             {::john {::isa #{::person}, ::likes #{::beef}},
-              ::mary {::isa #{::person}, ::likes #{::chicken}}}))
-      (is (= (@eg ::john)
-             {::isa #{::person}, ::likes #{::beef}}))
-      (is (= (@eg ::mary ::likes)
-             #{::chicken}))
-      (is (not (nil? (@eg ::mary ::likes ::chicken))))
-      (is (nil? (@eg ::mary ::likes ::beef)))
+             {:ig-ctest/john {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/beef}},
+              :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/chicken}}}))
+      (is (= (@eg :ig-ctest/john)
+             {:ig-ctest/isa #{:ig-ctest/person},
+              :ig-ctest/likes #{:ig-ctest/beef}}))
+      (is (= (@eg :ig-ctest/mary :ig-ctest/likes)
+             #{:ig-ctest/chicken}))
+      (is (not (nil? (@eg :ig-ctest/mary :ig-ctest/likes :ig-ctest/chicken))))
+      (is (nil? (@eg :ig-ctest/mary :ig-ctest/likes :ig-ctest/beef)))
       (is (#{::igraph/read-only
              ::igraph/immutable
              ::igraph/mutable}
@@ -113,80 +132,98 @@
       
   (testing "Traversal"
     (is (= (@eg-with-types)
-           {::consumable {::subClassOf #{::thing}},
-            ::beef {::subClassOf #{::meat}},
-            ::person {::subClassOf #{::thing}},
-            ::beer {::subClassOf #{::beverage}},
-            ::meat {::subClassOf #{::food}},
-            ::food {::subClassOf #{::consumable}},
-            ::beverage {::subClassOf #{::consumable}},
-            ::pork {::subClassOf #{::meat}},
-            ::john {::isa #{::person}, ::likes #{::beef}},
-            ::mary {::isa #{::person}, ::likes #{::chicken}},
-            ::chicken {::subClassOf #{::meat}}}))
-    (is (= (subClassOf* @eg-with-types {} #{} [::meat])
-           [{} #{::meat} '(::food)]))
-    (is (= (subClassOf* @eg-with-types {} #{::meat} '(::food))
-           [{} #{::meat ::food} '(::consumable)]))
+           {:ig-ctest/consumable {:ig-ctest/subClassOf #{:ig-ctest/thing}},
+            :ig-ctest/beef {:ig-ctest/subClassOf #{:ig-ctest/meat}},
+            :ig-ctest/person {:ig-ctest/subClassOf #{:ig-ctest/thing}},
+            :ig-ctest/beer {:ig-ctest/subClassOf #{:ig-ctest/beverage}},
+            :ig-ctest/meat {:ig-ctest/subClassOf #{:ig-ctest/food}},
+            :ig-ctest/food {:ig-ctest/subClassOf #{:ig-ctest/consumable}},
+            :ig-ctest/beverage {:ig-ctest/subClassOf #{:ig-ctest/consumable}},
+            :ig-ctest/pork {:ig-ctest/subClassOf #{:ig-ctest/meat}},
+            :ig-ctest/john {:ig-ctest/isa #{:ig-ctest/person},
+                            :ig-ctest/likes #{:ig-ctest/beef}},
+            :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
+                            :ig-ctest/likes #{:ig-ctest/chicken}},
+            :ig-ctest/chicken {:ig-ctest/subClassOf #{:ig-ctest/meat}}}))
+    (is (= (subClassOf* @eg-with-types {} #{} [:ig-ctest/meat])
+           [{} #{:ig-ctest/meat} '(:ig-ctest/food)]))
+    (is (= (subClassOf* @eg-with-types {} #{:ig-ctest/meat} '(:ig-ctest/food))
+           [{} #{:ig-ctest/meat :ig-ctest/food} '(:ig-ctest/consumable)]))
     (is (= (igraph/traverse 
             @eg-with-types 
-            (igraph/traverse-link ::isa) 
+            (igraph/traverse-link :ig-ctest/isa) 
             #{}
-            [::john ::mary])
-           #{::person}))
+            [:ig-ctest/john :ig-ctest/mary])
+           #{:ig-ctest/person}))
     (is (= (igraph/traverse @eg-with-types 
-                            (igraph/maybe-traverse-link ::isa) 
+                            (igraph/maybe-traverse-link :ig-ctest/isa) 
                             #{} 
-                            [::john ::mary])
-           #{::person ::john ::mary}))
-    (let [subsumed-by (igraph/traverse-or ::isa ::subClassOf)]
-      (is (= (igraph/traverse @eg-with-types subsumed-by #{} [::john])
-             #{::person}))
-      (is (= (igraph/traverse @eg-with-types subsumed-by #{} [::meat])
-             #{::food}))
+                            [:ig-ctest/john :ig-ctest/mary])
+           #{:ig-ctest/person :ig-ctest/john :ig-ctest/mary}))
+    (let [subsumed-by (igraph/traverse-or :ig-ctest/isa :ig-ctest/subClassOf)]
+      (is (= (igraph/traverse @eg-with-types subsumed-by #{} [:ig-ctest/john])
+             #{:ig-ctest/person}))
+      (is (= (igraph/traverse @eg-with-types subsumed-by #{} [:ig-ctest/meat])
+             #{:ig-ctest/food}))
       )
     (let [instance-of (igraph/t-comp
-                       [::isa (igraph/transitive-closure ::subClassOf)])
+                       [:ig-ctest/isa
+                        (igraph/transitive-closure :ig-ctest/subClassOf)])
           ]
-      (is (= (igraph/traverse @eg-with-types instance-of #{} [::john])
-             #{::person ::thing})))
+      (is (= (igraph/traverse @eg-with-types instance-of #{} [:ig-ctest/john])
+             #{:ig-ctest/person :ig-ctest/thing})))
     
-    (is (= (@eg-with-types ::beef subClassOf*)
-           #{::consumable ::beef ::meat ::food ::thing}))
-    (is (= (@eg-with-types ::beef subClassOf* ::food)
-           ::food))
-    (is (= (@eg-with-types ::john (igraph/t-comp [::likes subClassOf*]))
-           #{::consumable ::beef ::meat ::food ::thing}))
+    (is (= (@eg-with-types :ig-ctest/beef subClassOf*)
+           #{:ig-ctest/consumable :ig-ctest/beef
+             :ig-ctest/meat
+             :ig-ctest/food :ig-ctest/thing}))
+    (is (= (@eg-with-types :ig-ctest/beef subClassOf* :ig-ctest/food)
+           :ig-ctest/food))
+    (is (= (@eg-with-types :ig-ctest/john (igraph/t-comp
+                                           [:ig-ctest/likes subClassOf*]))
+           #{:ig-ctest/consumable
+             :ig-ctest/beef :ig-ctest/meat :ig-ctest/food :ig-ctest/thing}))
     ) ;; traversal
   (testing "Cardinality-1 utilities"
-    (is (= (igraph/unique (@eg-with-types ::john ::isa))
-           ::person))
-    (is (#{::consumable ::beef ::meat ::food ::thing}
-         (igraph/unique (@eg-with-types ::beef subClassOf*)
+    (is (= (igraph/unique (@eg-with-types :ig-ctest/john :ig-ctest/isa))
+           :ig-ctest/person))
+    (is (#{:ig-ctest/consumable
+           :ig-ctest/beef :ig-ctest/meat :ig-ctest/food :ig-ctest/thing}
+         (igraph/unique (@eg-with-types :ig-ctest/beef subClassOf*)
                         first)))
            
-    (is (= (igraph/flatten-description (@eg-with-types ::john))
-           {::isa ::person, ::likes ::beef}))
+    (is (= (igraph/flatten-description (@eg-with-types :ig-ctest/john))
+           {:ig-ctest/isa :ig-ctest/person, :ig-ctest/likes :ig-ctest/beef}))
     (let [g (igraph/add 
              @eg 
-             [::john ::likes ::beer ::has-vector [1 2 3]])
-        ]
-      (is (= (igraph/flatten-description (g ::john)))
-          {::isa ::person, ::likes #{::beef ::beer}, ::has-vector [1 2 3]})
+             [:ig-ctest/john
+              :ig-ctest/likes :ig-ctest/beer :ig-ctest/has-vector [1 2 3]])
+          ]
+      (is (= (igraph/flatten-description (g :ig-ctest/john)))
+          {:ig-ctest/isa :ig-ctest/person,
+           :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer},
+           :ig-ctest/has-vector [1 2 3]})
       
       (is (= (igraph/normalize-flat-description 
-              {::isa ::person, ::likes #{::beef ::beer}, ::has-vector [1 2 3]})
-             {::isa #{::person}, ::likes #{::beef ::beer}, ::has-vector #{[1 2 3]}})))
+              {:ig-ctest/isa :ig-ctest/person,
+               :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer},
+               :ig-ctest/has-vector [1 2 3]})
+             {:ig-ctest/isa #{:ig-ctest/person},
+              :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer},
+              :ig-ctest/has-vector #{[1 2 3]}})))
     
-    (let [g (igraph/add @eg {::john (igraph/normalize-flat-description
-                                   {::likes ::beer})})
+    (let [g (igraph/add @eg {:ig-ctest/john (igraph/normalize-flat-description
+                                   {:ig-ctest/likes :ig-ctest/beer})})
           ]
-      (is (= (g ::john))
-          {::isa #{::person}, ::likes #{::beef ::beer}}))
+      (is (= (g :ig-ctest/john))
+          {:ig-ctest/isa #{:ig-ctest/person},
+           :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer}}))
     
-    (let [g (igraph/assert-unique @eg ::john ::isa ::man)]
-      (is (= (g ::john)
-             {::likes #{::beef}, ::isa #{::man}})))
+    (let [g (igraph/assert-unique @eg
+                                  :ig-ctest/john :ig-ctest/isa :ig-ctest/man)]
+      (is (= (g :ig-ctest/john)
+             {:ig-ctest/likes #{:ig-ctest/beef},
+              :ig-ctest/isa #{:ig-ctest/man}})))
 
     ) ;; cardinality-1
   (testing "Other utilites"
@@ -208,18 +245,24 @@
       (is (= (igraph/normal-form 
               (igraph/add 
                @eg
-               [[::chicken ::subclass-of ::meat]
-                [::beef ::subclass-of ::meat]
+               [[:ig-ctest/chicken :ig-ctest/subclass-of :ig-ctest/meat]
+                [:ig-ctest/beef :ig-ctest/subclass-of :ig-ctest/meat]
                 ]))
-             {::john {::isa #{::person}, ::likes #{::beef}},
-              ::mary {::isa #{::person}, ::likes #{::chicken}},
-              ::chicken {::subclass-of #{::meat}},
-              ::beef {::subclass-of #{::meat}}}))
-      (is (= (igraph/normal-form (igraph/subtract @eg [::john]))
-             {::mary {::isa #{::person}, ::likes #{::chicken}}}))
-      (is (= (igraph/normal-form (igraph/subtract @eg [::john ::likes]))
-             {::john {::isa #{::person}}, 
-              ::mary {::isa #{::person}, ::likes #{::chicken}}}))
+             {:ig-ctest/john {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/beef}},
+              :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/chicken}},
+              :ig-ctest/chicken {:ig-ctest/subclass-of #{:ig-ctest/meat}},
+              :ig-ctest/beef {:ig-ctest/subclass-of #{:ig-ctest/meat}}}))
+      (is (= (igraph/normal-form (igraph/subtract @eg [:ig-ctest/john]))
+             {:ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/chicken}}}))
+      (is (= (igraph/normal-form (igraph/subtract
+                                  @eg
+                                  [:ig-ctest/john :ig-ctest/likes]))
+             {:ig-ctest/john {:ig-ctest/isa #{:ig-ctest/person}}, 
+              :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/chicken}}}))
       ))) ;; immutable
 
 
@@ -239,22 +282,27 @@
       (is (= (igraph/normal-form 
               (igraph/add! 
                @mutable-eg
-               [[::chicken ::subclass-of ::meat]
-                [::beef ::subclass-of ::meat]
+               [[:ig-ctest/chicken :ig-ctest/subclass-of :ig-ctest/meat]
+                [:ig-ctest/beef :ig-ctest/subclass-of :ig-ctest/meat]
                 ]))
-             {::john {::isa #{::person}, ::likes #{::beef}},
-              ::mary {::isa #{::person}, ::likes #{::chicken}},
-              ::chicken {::subclass-of #{::meat}},
-              ::beef {::subclass-of #{::meat}}}))
+             {:ig-ctest/john
+              {:ig-ctest/isa #{:ig-ctest/person},
+               :ig-ctest/likes #{:ig-ctest/beef}},
+              :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/chicken}},
+              :ig-ctest/chicken {:ig-ctest/subclass-of #{:ig-ctest/meat}},
+              :ig-ctest/beef {:ig-ctest/subclass-of #{:ig-ctest/meat}}}))
       (is (= (igraph/normal-form
               (igraph/subtract!
                @mutable-eg
-               [[::chicken ::subclass-of ::meat]
-                [::beef ::subclass-of ::meat]
+               [[:ig-ctest/chicken :ig-ctest/subclass-of :ig-ctest/meat]
+                [:ig-ctest/beef :ig-ctest/subclass-of :ig-ctest/meat]
                 ]))
              eg-data))
-      (is (= (igraph/normal-form (igraph/subtract! @mutable-eg [::john]))
-             {::mary {::isa #{::person}, ::likes #{::chicken}}}))
+      (is (= (igraph/normal-form
+              (igraph/subtract! @mutable-eg [:ig-ctest/john]))
+             {:ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/chicken}}}))
 
     )))
 
@@ -265,17 +313,22 @@
       (is (= (satisfies? igraph/IGraphSet @other-eg)
              true))
       (is (= (igraph/normal-form (igraph/union @eg @other-eg))
-             {::john {::isa #{::person}, ::likes #{::beef}},
-              ::mary {::isa #{::person}, ::likes #{::pork ::chicken}},
-              ::waldo {::isa #{::person}, ::likes #{::beer}}}))
+             {:ig-ctest/john {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/beef}},
+              :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/pork :ig-ctest/chicken}},
+              :ig-ctest/waldo {:ig-ctest/isa #{:ig-ctest/person},
+                               :ig-ctest/likes #{:ig-ctest/beer}}}))
       (is (= (igraph/normal-form (igraph/intersection @eg @other-eg))
-             {::mary {::isa #{::person}}}))
+             {:ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person}}}))
       (is (= (igraph/normal-form (igraph/difference @eg @other-eg))
-             {::john {::isa #{::person}, ::likes #{::beef}},
-              ::mary {::likes #{::chicken}}}))
+             {:ig-ctest/john {:ig-ctest/isa #{:ig-ctest/person},
+                              :ig-ctest/likes #{:ig-ctest/beef}},
+              :ig-ctest/mary {:ig-ctest/likes #{:ig-ctest/chicken}}}))
       (is (= (igraph/normal-form (igraph/difference @other-eg @eg))
-             {::mary {::likes #{::pork}},
-              ::waldo {::isa #{::person}, ::likes #{::beer}}}))))
+             {:ig-ctest/mary {:ig-ctest/likes #{:ig-ctest/pork}},
+              :ig-ctest/waldo {:ig-ctest/isa #{:ig-ctest/person},
+                               :ig-ctest/likes #{:ig-ctest/beer}}}))))
   )
 
 

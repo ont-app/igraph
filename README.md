@@ -133,7 +133,7 @@ The `IGraph` protocol specifies the following methods:
 
 #### Member access
 - `(normal-form g)` -> `{s {p #{o...}...}...}`
-- `(subjects g)` -> `(s ...)`, a lazy sequence of subjects
+- `(subjects g)` -> `(s ...)`, a lazy sequence
 - `(get-p-o g s)` -> `{p #{o...} ...}`
 - `(get-o g s p)` -> `#{o ...}`
 - `(ask g s p o)` -> truthy
