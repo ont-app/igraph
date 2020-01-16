@@ -120,7 +120,7 @@ RDF, while keeping direct dependencies to a minimum.
 <a name="The_IGraph_protocol"></a>
 ## The IGraph protocol
 
-This protocol defines the basic operations over a graph concieved of
+This protocol defines the basic operations over a graph conceived of
 as a set of triples S-P-O, where subject `S` and object `O` typically
 name entities, and property `P` is a named relation that applies
 between those entities.
@@ -181,6 +181,7 @@ John is a person who likes meat.
 
 Mary is also a person, and likes chicken.
 
+
 The normal form has three tiers. The "s-level" is a map from each
 subject to a "p-level" `description` of that subject.  The normal form
 for descriptions is a map from a property identifier to an "o-level"
@@ -190,6 +191,16 @@ What I'm aiming for here is a form that's
 - extremely regular and simple
 - lends itself to expressing and thinking about basic set operations
 on graphs.
+
+##### A note on the keyword identifiers used in these examples
+
+To keep things simple and readable, none of the keywords used in these
+examples are [namespaced](https://blog.jeaye.com/2017/10/31/clojure-keywords/#namespaced-keywords). 
+
+In practice you will probably want to used namespaced keywords, and
+some implementations of IGraph, e.g. those that interact directly with
+RDF-based representations, will expect them.
+
 
 <a name="h4-tractability"></a>
 #### Tractability
@@ -265,7 +276,7 @@ nil
 
 We must be able to query the graph using a format appropriate to the
 native representation. This example uses the format expected by
-`ont-app.igraph.graph/Graph`, described [below](#Querying):
+`ont-app.igraph.graph/Graph`, described [below](#h4-querying):
 
 ```
 > (igraph/query eg [[:?person :isa :person]])
@@ -276,7 +287,7 @@ native representation. This example uses the format expected by
 In this case, the result is a set of `binding maps`, mapping
 :?variables to values, similar to the result set of a SPARQL query.
 
-For comparison, here is a sketch is an equivalent SPARQL query, which
+For comparison, here is a sketch of an equivalent SPARQL query, which
 would be appropriate if our IGraph protocol was targeted to a SPARQL
 endpoint which we might call `sparql-eg`:
 
@@ -413,7 +424,7 @@ IGraph also defines multimethod `remove-from-graph`, dispatched on the
 graph types and a function `triples-removal-format`. This multimethod
 can inform both mutable and immutable graphs.
 
-The `triple-removal-format` function returns the same keywords as
+The `triples-removal-format` function returns the same keywords as
 `triples-format`, but adds one more: `:underspecified-triple`, a
 vector with fewer than 3 elements:
 
@@ -445,7 +456,8 @@ copy of the original graph modified per the argument provided.
 
 Calling `(add g to-add)` must return an immutable graph such that the
 graph now contains `to-add`. Any triples in `to-add` which are already
-in the graph are allowed, but should not be duplicated.
+in the graph are allowed, but implementations should not duplicate
+identical triples in the graph.
 
 See the notes above about the [add-to-graph](#add-to-graph)
 multimethod.
@@ -502,7 +514,7 @@ described [above](#remove-from-graph):
 <a name="IGraphMutable"></a>
 ## The IGraphMutable protocol
 
-Some graph's native representations are implemented as mutable
+Some graphs' native representations are implemented as mutable
 repositories. To support this, the IGraphMutable protocol provides
 methods `add!` and `subtract!`.
 
@@ -686,7 +698,7 @@ The first argument is the invariant graph itself.
 
 The second argument (and first element returned) is the context, which
 subClassOf* leaves unchanged.  Context is used by `traverse` to avoid
-cycles, and will be explained in detail [below](#context), but let us
+cycles, and will be explained in detail [below](#h4-context), but let us
 state here that more sophisticated traversal functions may use the
 context as a kind of blackboard to guide the traversal.
 
@@ -802,7 +814,7 @@ The function returned here will accumulate all `o` s.t. for all `s` in
 - `(maybe-traverse-link p)` -> (fn [g context acc queue] ...) ->
   [context acc' []]
 
-Matches 0 or 1 occurrances of `p`:
+Matches 0 or 1 occurrences of `p`:
 
 ```
 > (igraph/traverse eg-with-types 
@@ -819,7 +831,7 @@ Matches 0 or 1 occurrances of `p`:
 - `(traverse-or & ps)` -> (fn [g context acc queue] ...) -> [context
   acc' []],
 
-Where `ps` is one or more predicates. Matches any of those predicates.
+Where `ps` is one or more traversal functions, merging all of their outputs.
 
 Keyword arguments are interpreted as an implicit `traverse-link`.
 
@@ -869,14 +881,14 @@ vector of traversal functions, you pass in a map with the following
 keys:
 
 ```
-{ :path  [:traversal-stage-1 :traversal-stage-2...]
-   :traversal-stage-1 {:fn <traversal-fn>
+{ :path  [:<traversal-stage-1> :<traversal-stage-2> ...]
+   :<traversal-stage-1> {:fn <traversal-fn>
                       :doc <docstring> (optional)
                       :into <initial accumulator> (default [])
                       :local-context-fn <context> (default nil)
                       :update-global-context (default nil)
                       }
-   traversal-stage-2 ...
+   :<traversal-stage-2> ...
    ...
  }
  ```
@@ -897,7 +909,7 @@ This is a vector of traversal function specifications. Each traversal
 function specification must be either:
 - A traversal function
 - A keyword with an entry in the long-form map
-- A keyword eligible as an implicit [traverse-link](#traverse-link)
+- A keyword eligible as an implicit [traverse-link](#h4-traverse-link)
 
 If the traversal function specification is itself a function, it will
 be applied directly.
@@ -943,9 +955,21 @@ function:
 - `(match-or-traverse g s p)` -> #{<o>...}  
 - `(match-or-traverse g s p o)` -> truthy
 
-If the `p` argument is a function, it will be expected to match the
-signature of a traversal function, and the output of the method will
-be the value of its traversal, starting with queue [`s`].
+A typical declaration for an IGraph implementation will contain
+these two method declarations:
+
+```
+  #?(:clj clojure.lang.IFn
+     :cljs cljs.core/IFn)
+  ...
+  (invoke [g s p] (igraph/match-or-traverse g s p))
+  (invoke [g s p o] (igraph/match-or-traverse g s p o))
+  ...
+```
+
+If the `p` argument is a function, then `p` will be expected to match
+the signature of a traversal function, and the output of the method
+will be the value of its traversal, starting with queue [`s`].
 
 If `p` is not a function it will be matched directly against elements
 of the graph.
@@ -963,6 +987,8 @@ So given the traversal functions in the examples above:
 #{:consumable :beef :meat :food :thing}
 >
 ```
+
+
 
 <a name="cardinality-1_utilities"></a>
 ## cardinality-1 utilites
@@ -1201,6 +1227,8 @@ Implements IGraph for a [SPARQL
 endpoint](https://www.wikidata.org/wiki/Q26261192). Initializtion
 requires configuring query and update endpoints, and the query
 language is [SPARQL](https://www.wikidata.org/wiki/Q54871).
+
+Keyword identifiers are expected to be namespaced, and rely on the [ont-app/vocabulary](https://github.com/ont-app/vocabulary) library, which uses namespace metadata to intercede between Clojure namespaces and RDF namespaces.
 
 <a name="h3-datascript-graph"></a>
 ### datascript-graph
