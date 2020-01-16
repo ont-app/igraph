@@ -12,6 +12,12 @@
    [ont-app.igraph.core :as igraph]))
 
 
+;; FUN WITH READER MACROS
+(def cljs-LazySeq #?(:clj clojure.lang.LazySeq
+                     :cljs cljs.core/LazySeq))
+
+;; No reader macros below this point
+
 ;; TEST EXAMPLES IN THE README
 
 (def subClassOf* (igraph/transitive-closure ::subClassOf))
@@ -77,7 +83,7 @@
       (is (= (igraph/subjects @eg)
              `(::john ::mary)))
       (is (= (type (igraph/subjects @eg))
-             clojure.lang.LazySeq))
+             cljs-LazySeq))
       (is (= (igraph/get-p-o @eg ::john)
              {::isa #{::person}, ::likes #{::beef}}))
       (is (= (igraph/get-o @eg ::john ::isa)

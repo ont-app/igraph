@@ -10,15 +10,14 @@
                  ]
   
   ;; :main ^:skip-aot ont-app.igraph.core
-  :target-path "target/%s"
-  :resource-paths ["resources" "target/cljsbuild"]
-  
   :plugins [[lein-codox "0.10.6"]
             [lein-cljsbuild "1.1.7"
              :exclusions [[org.clojure/clojure]]]
             [lein-doo "0.1.11"]
             [lein-ancient "0.6.15"]
             ]
+  :target-path "target/%s"
+  :resource-paths ["resources" "target/cljsbuild"]
   :source-paths ["src"]
   :test-paths ["src" "test"]
   :cljsbuild
@@ -46,6 +45,7 @@
                       :output-to "resources/test/compiled.js"
                       :output-dir "resources/test/js/compiled/out"
                       :optimizations :advanced ;;:none
+                      :warnings {:bad-method-signature false}
                       }
            }
    }} ;; end cljsbuild
