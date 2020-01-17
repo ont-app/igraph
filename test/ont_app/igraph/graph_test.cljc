@@ -28,8 +28,8 @@
     (ct/readme-immutable)
     (ct/readme-set-operations))
   (testing "query"
-    (is (= (igraph/query @ct/eg [[:?person ::ct/isa ::ct/person]])
-           #{{:?person ::ct/mary} {:?person ::ct/john}})))
+    (is (= (igraph/query @ct/eg [[:?person :ig-ctest/isa :ig-ctest/person]])
+           #{{:?person :ig-ctest/mary} {:?person :ig-ctest/john}})))
   )
 
 
@@ -176,10 +176,11 @@
 
 (deftest query-test
   (testing "Tests a basic query against the dummy test-graph"
-    (is (= (igraph/query test-graph
-                  [[:?liker :likes :?likee]
-                   [:?likee :isa :?type]]
-                  )
+    (is (= 
+            (igraph/query test-graph
+                          [[:?liker :likes :?likee]
+                           [:?likee :isa :?type]]
+                          )
            #{{:?type :drink,
               :?likee :coke,
               :?liker :mary}
