@@ -92,7 +92,7 @@
                               :ig-ctest/likes #{:ig-ctest/beef}},
               :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
                               :ig-ctest/likes #{:ig-ctest/chicken}}}))
-      (is (= (igraph/subjects @eg)
+      (is (= (sort (igraph/subjects @eg))
              `(:ig-ctest/john :ig-ctest/mary)))
       (is (= (type (igraph/subjects @eg))
              cljs-LazySeq))
