@@ -564,7 +564,7 @@ given instantiation of the graph will remain immutable.
 g' now points to the most recent state of g's
 [transactor](https://docs.datomic.com/on-prem/transactor.html).
 
-An error should be thrown if `(mutablility g)` != :igraph/mutable.
+An error should be thrown if `(mutablility g)` != :igraph/accumulate-only.
 
 <a name="retract_method"></a>
 ### `retract`
@@ -573,7 +573,7 @@ An error should be thrown if `(mutablility g)` != :igraph/mutable.
 g' now points to the most recent state of g's
 [transactor](https://docs.datomic.com/on-prem/transactor.html).
 
-An error should be thrown if `(mutablility g)` != :igraph/.
+An error should be thrown if `(mutablility g)` != :igraph/accumulate-only.
 
 
 <a name="The_IGraphSet_protocol"></a>
