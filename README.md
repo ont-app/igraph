@@ -30,6 +30,9 @@ It also defines a `Graph` datatype which implements `IGraph`.
 - [The IGraphMutable protocol](#IGraphMutable)
     - [`add!`](#add!_method)
     - [`subtract!`](#subtract!_method)
+- [The IGraphAccumulateOnly protocol](#IGraphAccumulateOnly)
+    - [`claim`](#claim_method)
+    - [`retract`](#retract_method)
 - [The IGraphSet protocol](#The_IGraphSet_protocol)
   - [Methods summary](#IGraphSet_methods_summary)
   - [`union`](#union_method)
@@ -375,6 +378,7 @@ The `mutability` method returns one of the following values
   [IGraphImmutable](#IGraphImmutable)
 - `::igraph/mutable` - the graph implements
   [IGraphMutable](#IGraphMutable)
+- `::igraph/accumulate-only - the graph implements [IGraphAccumulateOnly](#IGraphAccumulateOnly), the approach used in Datomic
 
 <a name="add-to-graph"></a>
 #### The `add-to-graph` multimethod
@@ -534,6 +538,43 @@ An error should be thrown if `(mutablility g)` != :igraph/mutable.
 return value.
 
 An error should be thrown if `(mutablility g)` != :igraph/mutable.
+
+<a name="IGraphAccumulateOnly"></a>
+## The IGraphAccumulateOnly protocol
+
+A graph whose native representation is based on
+[Datomic](https://www.datomic.com/) exects what Datomic calls an
+"Accumulate-only" approach to adding and removing from a graph. To
+support this, the IGraphAccumulateOnly protocol provides methods
+`claim` (corresponding to the datomic 'add' operation), and
+`retract`. In this scheme the state of the graph can be rolled back to
+any point in its history. See the Datomic documentation for details.
+
+The [add-to-graph](#add-to-graph) and
+[remove-from-graph](#remove-from-graph) multimethods should still
+inform the logic here, and the behavior should be essentially the
+same, with the exception that the graph returned now points to the
+most recent state of the graph after making the modification. Any
+given instantiation of the graph will remain immutable.
+
+<a name="claim_method"></a>
+### `claim`
+
+`(claim g to-add)` -> g', where g is an append-only graph, and
+g' now points to the most recent state of g's
+[transactor](https://docs.datomic.com/on-prem/transactor.html).
+
+An error should be thrown if `(mutablility g)` != :igraph/mutable.
+
+<a name="retract_method"></a>
+### `retract`
+
+`(retract g to-retract)` -> g', where g is an append-only graph, and
+g' now points to the most recent state of g's
+[transactor](https://docs.datomic.com/on-prem/transactor.html).
+
+An error should be thrown if `(mutablility g)` != :igraph/.
+
 
 <a name="The_IGraphSet_protocol"></a>
 ## The IGraphSet protocol

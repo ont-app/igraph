@@ -126,7 +126,7 @@ Where
 ")
   ;; mutability
   (mutability [g]
-    "Returns one of ::read-only ::immutable ::mutable"
+    "Returns one of ::read-only ::immutable ::mutable ::accumulate-only"
     )
   )
 
@@ -141,7 +141,7 @@ Where
 Throws a ::ReadOnly exception if (read-only? <g>)
 Where
 <g> is a graph
-<to-add> is in some format interpretable as a set of triples.
+<to-add> is in triples-format
 "
     )
   (subtract [g to-subtract]
@@ -149,7 +149,7 @@ Where
 Throws an exception if (mutability g) != ::immutable
 Where
 <g> is an immutablegraph
-<to-subtract> is in some format interpretable as a set of triples.
+<to-subtract> is in triples-removal-format
 "
     ))
 
@@ -159,7 +159,7 @@ Where
 Throws an exception if (mutability g) != ::mutable
 Where
 <g> is a mutable graph
-<to-add> is in some format interpretable as a set of triples.
+<to-add> is in triples-format
 "
     )
   (subtract! [g to-subtract]
@@ -167,9 +167,32 @@ Where
 Throws a ::ReadOnly exception if (read-only? <g>)
 Where
 <g> is a graph
-<to-subtract> is in some format interpretable as a set of triples.
+<to-subtract> is in triples-removal-format
 "
     ))
+
+(defprotocol IGraphAccumulateOnly
+    (claim [g to-add]
+    "Returns <g>, with <to-add> added to <g>'s associated transactor.
+Throws an exception if (mutability g) != ::accumulate-only
+Where
+<g> is a mutable graph
+<to-add> is in triples-format
+NOTE: see Datomic documentation for the 'add' operation for details
+"
+    )
+  (retract [g to-retract]
+    "Returns <g> with <comm> reset to head
+Side-effect:  <to-retract> retracted from <comm>
+Throws an exception if (mutability g) != ::accumulate-only.
+Where
+<g> is a graph
+<comm> is a datomic-style transactor
+<to-retract> is in triples-removal-format
+NOTE: see Datomic documentation for details
+"
+    ))
+
 
 (defprotocol IGraphSet
   "Basic set operations between graphs."

@@ -121,13 +121,20 @@
       (is (nil? (@eg :ig-ctest/mary :ig-ctest/likes :ig-ctest/beef)))
       (is (#{::igraph/read-only
              ::igraph/immutable
-             ::igraph/mutable}
+             ::igraph/mutable
+             ::igraph/accumulate-only
+             }
            (igraph/mutability @eg)))
       )
     (testing "IGraphMutable"
       (when (= (igraph/mutability @eg) :igraph/mutable)
         (is (= (satisfies? igraph/IGraphMutable @eg)
                true))))
+    (testing "IGraphAccumulateOnly"
+      (when (= (igraph/mutability @eg) :igraph/accumulate-only)
+        (is (= (satisfies? igraph/IGraphAccumulateOnly @eg)
+               true))))
+
     ;; TODO: add any future examples from README for mutable graphs
       
   (testing "Traversal"
@@ -304,7 +311,8 @@
              {:ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
                               :ig-ctest/likes #{:ig-ctest/chicken}}}))
 
-    )))
+      )))
+;; TODO: add test for IGraphAccumulateOnly
 
 (deftest readme-set-operations
   (testing "IGraphSet"
