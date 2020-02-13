@@ -553,6 +553,7 @@ Short form example:
 An inferred 'uncle' relation.
 
 "
+  ;; TODO: consider moving examples above into the README
   {:pre [(or (not (:path comp-spec)) (vector? (:path comp-spec)))
          (doseq [path-spec (:path comp-spec)]
            (assert (comp-spec path-spec)))

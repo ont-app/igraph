@@ -12,6 +12,8 @@
 
 
 ;; README EXAMPLES
+(reset! ct/initial-graph (g/make-graph))
+
 (reset! ct/eg
         (g/make-graph :contents ct/eg-data))
 
@@ -20,6 +22,10 @@
 
 (reset! ct/eg-with-types
         (igraph/add @ct/eg ct/types-data))
+
+(reset! ct/eg-for-cardinality-1
+        (igraph/add @ct/eg-with-types
+                    ct/cardinality-1-appendix))
                         
 
 (deftest readme-examples

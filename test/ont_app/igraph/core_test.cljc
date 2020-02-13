@@ -9,7 +9,9 @@
   (:require
    #?(:cljs [cljs.test :refer-macros [async deftest is testing]]
       :clj [clojure.test :refer :all])
-   [ont-app.igraph.core :as igraph]))
+   [ont-app.igraph.core :as igraph]
+   [ont-app.igraph.graph :as g]
+   ))
 
 
 ;; FUN WITH READER MACROS
@@ -21,6 +23,9 @@
 ;; TEST EXAMPLES IN THE README
 
 (def subClassOf* (igraph/transitive-closure :ig-ctest/subClassOf))
+
+(def initial-graph "Holds graph with any required schema content"
+  (atom nil))
 
 (def eg-data "Initial data for the `eg` graph"
   {:ig-ctest/john
@@ -61,10 +66,26 @@
   "Used to test examples from the README"
   (atom nil))
 
+(def cardinality-1-appendix
+  {:ig-ctest/john {:ig-ctest/likes #{:ig-ctest/beer}
+                   :ig-ctest/has-vector #{[1 2 3]}}})
 
+(def eg-for-cardinality-1
+  "Should contain union of eg-data types-data and cardinality-1-appendix"
+  (atom nil)
+  )
+
+
+(defn sans-schema [g]
+  "Returns a native graph with the contents of `g` minus @initial-graph"
+  (igraph/difference (g/make-graph
+                      :contents (igraph/normal-form g))
+                     (g/make-graph
+                      :contents (igraph/normal-form @initial-graph))))
 (deftest readme
   ;; all the examples in the README should work as advertised
   (when (and @eg @other-eg @eg-with-types)
+
     (testing "implementation independent"
       (is (= (igraph/triples-format
               {:ig-ctest/john {:ig-ctest/likes# #{:ig-ctest/beef}}})
@@ -83,17 +104,24 @@
       (is (= (igraph/triples-removal-format [:ig-ctest/john])
              :underspecified-triple))
       (is (= (igraph/triples-removal-format [:ig-ctest/john :ig-ctest/likes])
-             :underspecified-triple))
-      )
+             :underspecified-triple)))
+
     (testing "eg-graph"
-      (is (= (igraph/normal-form @eg) eg-data))
-      (is (= (igraph/normal-form @eg)
+      (is (= (igraph/normal-form (sans-schema @initial-graph))
+             {}))
+      (is (= (igraph/normal-form
+              (sans-schema @eg))
+              eg-data))
+      (is (= eg-data
              {:ig-ctest/john {:ig-ctest/isa #{:ig-ctest/person},
                               :ig-ctest/likes #{:ig-ctest/beef}},
               :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
                               :ig-ctest/likes #{:ig-ctest/chicken}}}))
-      (is (= (sort (igraph/subjects @eg))
-             `(:ig-ctest/john :ig-ctest/mary)))
+      
+      ;; Some implementations may have schema-related subjects, which is OK
+      (is (= (clojure.set/difference (set (igraph/subjects @eg))
+                                     (set (igraph/subjects @initial-graph)))
+             #{:ig-ctest/john :ig-ctest/mary}))
       (is (= (type (igraph/subjects @eg))
              cljs-LazySeq))
       (is (= (igraph/get-p-o @eg :ig-ctest/john)
@@ -101,24 +129,19 @@
               :ig-ctest/likes #{:ig-ctest/beef}}))
       (is (= (igraph/get-o @eg :ig-ctest/john :ig-ctest/isa)
              #{:ig-ctest/person}))
-      (is (not (nil? (igraph/ask @eg
-                                 :ig-ctest/john
-                                 :ig-ctest/likes
-                                 :ig-ctest/beef))))
-      (is (= (igraph/ask @eg :ig-ctest/john :ig-ctest/likes :ig-ctest/chicken)
-             nil))
-      (is (= (@eg)
-             {:ig-ctest/john {:ig-ctest/isa #{:ig-ctest/person},
-                              :ig-ctest/likes #{:ig-ctest/beef}},
-              :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
-                              :ig-ctest/likes #{:ig-ctest/chicken}}}))
+      (is (not (not (igraph/ask @eg
+                                :ig-ctest/john
+                                :ig-ctest/likes
+                                :ig-ctest/beef))))
+      (is (not
+           (igraph/ask @eg :ig-ctest/john :ig-ctest/likes :ig-ctest/chicken)))
       (is (= (@eg :ig-ctest/john)
              {:ig-ctest/isa #{:ig-ctest/person},
               :ig-ctest/likes #{:ig-ctest/beef}}))
       (is (= (@eg :ig-ctest/mary :ig-ctest/likes)
              #{:ig-ctest/chicken}))
       (is (not (nil? (@eg :ig-ctest/mary :ig-ctest/likes :ig-ctest/chicken))))
-      (is (nil? (@eg :ig-ctest/mary :ig-ctest/likes :ig-ctest/beef)))
+      (is (not (@eg :ig-ctest/mary :ig-ctest/likes :ig-ctest/beef)))
       (is (#{::igraph/read-only
              ::igraph/immutable
              ::igraph/mutable
@@ -131,14 +154,16 @@
         (is (= (satisfies? igraph/IGraphMutable @eg)
                true))))
     (testing "IGraphAccumulateOnly"
-      (when (= (igraph/mutability @eg) :igraph/accumulate-only)
+      (when (= (igraph/mutability @eg) ::igraph/accumulate-only)
         (is (= (satisfies? igraph/IGraphAccumulateOnly @eg)
                true))))
 
     ;; TODO: add any future examples from README for mutable graphs
       
-  (testing "Traversal"
-    (is (= (@eg-with-types)
+    (testing "Traversal"
+      ;; there may be schema-related stuff in the implementation graph,
+      ;; which is OK
+      (is (= (igraph/normal-form (sans-schema @eg-with-types)))
            {:ig-ctest/consumable {:ig-ctest/subClassOf #{:ig-ctest/thing}},
             :ig-ctest/beef {:ig-ctest/subClassOf #{:ig-ctest/meat}},
             :ig-ctest/person {:ig-ctest/subClassOf #{:ig-ctest/thing}},
@@ -151,7 +176,7 @@
                             :ig-ctest/likes #{:ig-ctest/beef}},
             :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
                             :ig-ctest/likes #{:ig-ctest/chicken}},
-            :ig-ctest/chicken {:ig-ctest/subClassOf #{:ig-ctest/meat}}}))
+            :ig-ctest/chicken {:ig-ctest/subClassOf #{:ig-ctest/meat}}})
     (is (= (subClassOf* @eg-with-types {} #{} [:ig-ctest/meat])
            [{} #{:ig-ctest/meat} '(:ig-ctest/food)]))
     (is (= (subClassOf* @eg-with-types {} #{:ig-ctest/meat} '(:ig-ctest/food))
@@ -191,6 +216,7 @@
            #{:ig-ctest/consumable
              :ig-ctest/beef :ig-ctest/meat :ig-ctest/food :ig-ctest/thing}))
     ) ;; traversal
+
   (testing "Cardinality-1 utilities"
     (is (= (igraph/unique (@eg-with-types :ig-ctest/john :ig-ctest/isa))
            :ig-ctest/person))
@@ -201,12 +227,7 @@
            
     (is (= (igraph/flatten-description (@eg-with-types :ig-ctest/john))
            {:ig-ctest/isa :ig-ctest/person, :ig-ctest/likes :ig-ctest/beef}))
-    (let [g (igraph/add 
-             @eg 
-             [:ig-ctest/john
-              :ig-ctest/likes :ig-ctest/beer :ig-ctest/has-vector [1 2 3]])
-          ]
-      (is (= (igraph/flatten-description (g :ig-ctest/john)))
+    (is (= (igraph/flatten-description (@eg-for-cardinality-1 :ig-ctest/john)))
           {:ig-ctest/isa :ig-ctest/person,
            :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer},
            :ig-ctest/has-vector [1 2 3]})
@@ -217,28 +238,14 @@
                :ig-ctest/has-vector [1 2 3]})
              {:ig-ctest/isa #{:ig-ctest/person},
               :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer},
-              :ig-ctest/has-vector #{[1 2 3]}})))
-    
-    (let [g (igraph/add @eg {:ig-ctest/john (igraph/normalize-flat-description
-                                   {:ig-ctest/likes :ig-ctest/beer})})
-          ]
-      (is (= (g :ig-ctest/john))
-          {:ig-ctest/isa #{:ig-ctest/person},
-           :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer}}))
-    
-    (let [g (igraph/assert-unique @eg
-                                  :ig-ctest/john :ig-ctest/isa :ig-ctest/man)]
-      (is (= (g :ig-ctest/john)
-             {:ig-ctest/likes #{:ig-ctest/beef},
-              :ig-ctest/isa #{:ig-ctest/man}})))
-
-    ) ;; cardinality-1
+              :ig-ctest/has-vector #{[1 2 3]}}))) ;; cardinality-1 utils
+     
   (testing "Other utilites"
     (letfn [(tally-triples [tally s p o]
                             (inc tally))
-                            
             ]
-      (is (= (igraph/reduce-spo tally-triples 0 @eg)
+      (is (= (- (igraph/reduce-spo tally-triples 0 @eg)
+                (igraph/reduce-spo tally-triples 0 @initial-graph))
              4)))
     ) ;; other utilities
   ))
@@ -270,6 +277,13 @@
              {:ig-ctest/john {:ig-ctest/isa #{:ig-ctest/person}}, 
               :ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
                               :ig-ctest/likes #{:ig-ctest/chicken}}}))
+      
+      (let [g (igraph/assert-unique @eg
+                                  :ig-ctest/john :ig-ctest/isa :ig-ctest/man)]
+        (is (= (g :ig-ctest/john)
+               {:ig-ctest/likes #{:ig-ctest/beef},
+                :ig-ctest/isa #{:ig-ctest/man}})))
+
       ))) ;; immutable
 
 
@@ -310,6 +324,7 @@
               (igraph/subtract! @mutable-eg [:ig-ctest/john]))
              {:ig-ctest/mary {:ig-ctest/isa #{:ig-ctest/person},
                               :ig-ctest/likes #{:ig-ctest/chicken}}}))
+      ;; todo test assert-unique
 
       )))
 ;; TODO: add test for IGraphAccumulateOnly
