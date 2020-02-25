@@ -4,7 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [org.clojure/clojurescript "1.10.520"]
+                 [org.clojure/clojurescript "1.10.597"] 
                  [org.clojure/spec.alpha "0.2.176"]
                  [lein-doo "0.1.11"]
                  ]
@@ -14,7 +14,6 @@
             [lein-cljsbuild "1.1.7"
              :exclusions [[org.clojure/clojure]]]
             [lein-doo "0.1.11"]
-            [lein-ancient "0.6.15"]
             ]
   :target-path "target/%s"
   :resource-paths ["resources" "target/cljsbuild"]
@@ -28,10 +27,9 @@
     :dev {:source-paths ["src"]
            :compiler {
                       :main ont-app.igraph.core 
-                      :asset-path "js/compiled/out"
-                      :output-to "resources/public/js/igraph.js"
+                      :output-to "resources/dev/js/igraph.js"
                       :source-map-timestamp true
-                      :output-dir "resources/public/js/compiled/out"
+                      :output-dir "resources/dev/js/compiled/out"
                       :optimizations :none
                       }
           }
@@ -41,24 +39,24 @@
            :compiler {
                       :main ont-app.igraph.doo
                       :target :nodejs
-                      :asset-path "resources/test/js/compiled/out"
                       :output-to "resources/test/compiled.js"
                       :output-dir "resources/test/js/compiled/out"
                       :optimizations :advanced ;;:none
                       :warnings {:bad-method-signature false}
                       }
            }
+
    }} ;; end cljsbuild
 
   :codox {:output-path "doc"}
 
   :profiles {:uberjar {:aot :all}
-             :dev {:dependencies [[binaryage/devtools "0.9.10"]
+             :dev {:dependencies [[binaryage/devtools "1.0.0"]
                                   ]
                    :source-paths ["src"] 
                    :clean-targets
                    ^{:protect false}
-                   ["resources/public/js/compiled"
+                   ["resources/dev/js/compiled"
                     "resources/test"
                     :target-path
                     ]

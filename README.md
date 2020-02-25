@@ -79,10 +79,10 @@ This is deployed to [clojars](https://clojars.org/ont-app/igraph):
 [![Clojars
 Project](https://img.shields.io/clojars/v/ont-app/igraph.svg)](https://clojars.org/ont-app/igraph)
 
-With snapshot
 ```
-[ont-app/igraph "0.1.4-SNAPSHOT"]
+[ont-app/igraph "0.1.4"]
 ```
+
 Require thus:
 ```
 (:require 
