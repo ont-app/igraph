@@ -68,6 +68,7 @@ It also defines a `Graph` datatype which implements `IGraph`.
     - [Querying](#h4-querying)
   - [sparql-client](#h3-sparql-client)
   - [datascript-graph](#h3-datascript-graph)
+  - [datomic-client](#h3-datomic-client)
 - [Future Work](#h2-future-work)
 ---
 
@@ -143,7 +144,7 @@ The `IGraph` protocol specifies the following methods:
 - `(query g q)` -> implementation-dependent query results
 
 #### Content manipulation
-- `(mutability g)` -> One of `#{::read-only ::immutable ::mutable}`
+- `(mutability g)` -> One of `#{::read-only ::immutable ::mutable :accumulate-only}`
 
 #### `invoke` to support `IFn`
 - `(g)` = `(normal-form g)`
@@ -1275,11 +1276,19 @@ Keyword identifiers are expected to be namespaced, and rely on the [ont-app/voca
 This implements IGraph for a
 [datascript](https://github.com/tonsky/datascript) native
 representation, and may as such may need to be initialized with some
-schema declarations. Query language is datalog.
+schema declarations. Query language is datalog. Immutable, with set
+operations.
+
+<a name="h3-datomic-client"></a>
+### datomic-client
+
+https://github.com/ont-app/datomic-client
+
+This implements IGraph for the [Datomic Client API](https://docs.datomic.com/cloud/client/client-api.html). The query language is datalog. Mutability model is Accumulate Only. There are no set operations.
 
 <a name="h2-future-work"></a>
 ## Future work
-- Datomic, loom, ubergraph, and other graph-oriented libraries will be
+- loom, ubergraph, and other graph-oriented libraries will be
   ported to.
 - There will be an annotated-normal-form, providing annotations for
   reified triples (for weights and such).
