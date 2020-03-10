@@ -69,6 +69,7 @@ It also defines a `Graph` datatype which implements `IGraph`.
   - [sparql-client](#h3-sparql-client)
   - [datascript-graph](#h3-datascript-graph)
   - [datomic-client](#h3-datomic-client)
+- [Acknowledgements](#h2-acknowledgements)
 - [Future Work](#h2-future-work)
 ---
 
@@ -1305,6 +1306,7 @@ This implements IGraph for the [Datomic Client API](https://docs.datomic.com/clo
 - Some kind of a scheme to bring all the various query formats under a
   single tent
 
+<a name="h2-acknowledgements"></a>
 ## Acknowledgements
 
 Thanks to [Ram Krishnan](https://github.com/kriyative) for his
