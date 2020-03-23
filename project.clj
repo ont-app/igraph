@@ -50,7 +50,7 @@
 
   :codox {:output-path "doc"}
 
-  :profiles {:uberjar {:aot :all}
+  :profiles {:uberjar {}
              :dev {:dependencies [[binaryage/devtools "1.0.0"]
                                   ]
                    :source-paths ["src"] 
