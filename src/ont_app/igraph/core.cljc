@@ -22,7 +22,7 @@ other basic clojure data structures such as maps, vectors and sets.
 
 (declare normal-form)
 #?(:clj
-   (defn write-to-file [path g]
+   (defn write-to-file 
      "Side-effect: writes normal form of `g` to <path> as edn.
 Returns: <path>
 Where
@@ -32,6 +32,7 @@ Where
 NOTE: Anything that would choke the reader on slurp should be removed 
   from <g> before saving.
 "
+     [path g]
      (let [output-path (str/replace path #"^file://" "")
            ]
        (io/make-parents output-path)
@@ -43,12 +44,13 @@ NOTE: Anything that would choke the reader on slurp should be removed
        )))
 (declare add)
 #?(:clj
-   (defn read-from-file [g path]
+   (defn read-from-file 
      "returns `g` with the contents of `path` added
 Where
 <g> implements IGraph
 <path> is an edn file containing a normal-form representation of some graph,
 typically the output of save-to-file."
+     [g path]
      (add g (read-string (slurp (io/as-file path))))
      ))
 
@@ -445,7 +447,7 @@ NOTE: see Datomic documentation for details
                (g s p)),
        (rest queue)])))
 
-(defn maybe-traverse-link [p]
+(defn maybe-traverse-link 
   "Returns traversal function (fn [g context, acc queue]...)
     -> [context, acc', queue'], 
   Where
@@ -458,6 +460,7 @@ NOTE: see Datomic documentation for details
   NOTE: typically used as one component in a traversal path. 
   cf the '?' operator in SPARQL property paths
 "
+  [p]
   (fn optional-link-traversal [g context acc queue]
     (let [s (first queue)]
       [context,
@@ -466,7 +469,7 @@ NOTE: see Datomic documentation for details
                (g s p)),
        (rest queue)])))
 
-(defn traverse-or [& ps]
+(defn traverse-or 
   "Returns traversal function (fn [g context, acc queue]...)
     -> [context, acc', queue'], for `ps`
   Where
@@ -479,6 +482,7 @@ NOTE: see Datomic documentation for details
 
   cf the '|' operator in SPARQL property paths
 "
+  [& ps]
   (fn traversal-disjunction [g context acc queue]
     (letfn [(collect-traversals
               [s sacc p]
@@ -492,7 +496,7 @@ NOTE: see Datomic documentation for details
      ]) ))
 
 
-(defn t-comp [comp-spec]
+(defn t-comp 
   "Returns a traversal function composed of elements specified in `comp-spec`
 Where
 <comp-spec> := {:path [<spec-element>, ...]
@@ -554,6 +558,7 @@ An inferred 'uncle' relation.
 
 "
   ;; TODO: consider moving examples above into the README
+  [comp-spec]
   {:pre [(or (not (:path comp-spec)) (vector? (:path comp-spec)))
          (doseq [path-spec (:path comp-spec)]
            (assert (comp-spec path-spec)))
@@ -602,10 +607,11 @@ An inferred 'uncle' relation.
 ;; MATCH-OR-TRAVERSE INVOCATION
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn- match-or-traverse-tag [p]
+(defn- match-or-traverse-tag 
   "Returns :traverse if <p> is a function, else :match
 Informs p-dispatcher
 "
+  [p]
   (if (fn? p)
     :traverse
     ;;else it's a straight match
@@ -636,13 +642,13 @@ Informs p-dispatcher
 (defmethod match-or-traverse :traverse
   ([g s p]
    {:doc "<p> is a traversal function. Aggregate a set."
-    :pre (fn? p)
+    :pre [(fn? p)]
     }
    (traverse g p #{} [s]))
   ;;;;;;;;;;
   ([g s p o]
    {:doc "<p> is a traversal function. Stop when you find <o>."
-    :pre (fn? p)
+    :pre [(fn? p)]
     }
    (declare unique)
    (let [seek-o (fn seek-o [context acc]
@@ -686,11 +692,12 @@ Informs p-dispatcher
                                      })))))))
 
 ^{:inverse-of normalize-flat-description}
-(defn flatten-description [p-o]
+(defn flatten-description 
   "Returns `p-o` description with singletons broken out into scalars
 Where
 <p-o> := {<p> #{<o>}, ...}, normal form at 'description' level of a graph.
 "
+  [p-o]
   (let [maybe-flatten (fn [acc k v]
                             (assoc acc
                                    k
@@ -715,12 +722,13 @@ Where
         ]
     (reduce-kv maybe-setify {} m)))
 
-(defn assert-unique [g s p o]
+(defn assert-unique 
   "Returns `g`', replacing any existing [s p *] with [s p o]"
+  [g s p o]
   (add (subtract g [s p])
        [s p o]))
 
-(defn reduce-spo [f acc g]
+(defn reduce-spo 
   "Returns <acc'> s.t. (f acc s p o) -> <acc'> for every triple in <g>
 Where
 <f> := (fn [acc s p o] -> <acc'>
@@ -730,6 +738,7 @@ Where
 NOTE: C.f. reduce-kv
 "
   ;;TODO f should conform to some spec
+  [f acc g]
   (letfn [(collect-o [s p acc o]
             (f acc s p o)
             )

@@ -4,7 +4,10 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [org.clojure/clojurescript "1.10.597"] 
+                 [org.clojure/clojurescript "1.10.597"
+                  :exclusions [com.google.errorprone/error_prone_annotations
+                               com.google.code.findbugs/jsr305
+                               ]] 
                  [org.clojure/spec.alpha "0.2.176"]
                  [lein-doo "0.1.11"]
                  ]
@@ -17,7 +20,7 @@
             ]
   :target-path "target/%s"
   :resource-paths ["resources" "target/cljsbuild"]
-  :source-paths ["src"]
+  :source-paths ["src" "test"] ;; test files inform implementation tests downstream
   :test-paths ["src" "test"]
   :cljsbuild
   {

@@ -78,13 +78,18 @@
 
 (defn sans-schema [g]
   "Returns a native graph with the contents of `g` minus @initial-graph"
-  (igraph/difference (g/make-graph
-                      :contents (igraph/normal-form g))
-                     (g/make-graph
-                      :contents (igraph/normal-form @initial-graph))))
+  (if (not @initial-graph)
+    g
+    ;; else there's some schema configuration
+    (igraph/difference (g/make-graph
+                        :contents (igraph/normal-form g))
+                       (g/make-graph
+                        :contents (igraph/normal-form @initial-graph)))))
 (deftest readme
   ;; all the examples in the README should work as advertised
-  (when (and @eg @other-eg @eg-with-types)
+  (when (not (and @eg @other-eg @eg-with-types @eg-for-cardinality-1))
+    (println "Warning: README tests require @eg @other-eg @eg-with-types @eg-for-cardinality-1. Skipping"))
+  (when (and @eg @other-eg @eg-with-types @eg-for-cardinality-1)
 
     (testing "implementation independent"
       (is (= (igraph/triples-format
@@ -107,8 +112,9 @@
              :underspecified-triple)))
 
     (testing "eg-graph"
-      (is (= (igraph/normal-form (sans-schema @initial-graph))
-             {}))
+      (is (or (not @initial-graph) ;; some graphs require schemas
+              (= (igraph/normal-form (sans-schema @initial-graph))
+                 {})))
       (is (= (igraph/normal-form
               (sans-schema @eg))
               eg-data))
@@ -119,9 +125,10 @@
                               :ig-ctest/likes #{:ig-ctest/chicken}}}))
       
       ;; Some implementations may have schema-related subjects, which is OK
-      (is (= (clojure.set/difference (set (igraph/subjects @eg))
-                                     (set (igraph/subjects @initial-graph)))
-             #{:ig-ctest/john :ig-ctest/mary}))
+      (is (or (not @initial-graph)
+              (= (clojure.set/difference (set (igraph/subjects @eg))
+                                         (set (igraph/subjects @initial-graph)))
+                 #{:ig-ctest/john :ig-ctest/mary})))
       (is (= (type (igraph/subjects @eg))
              cljs-LazySeq))
       (is (= (igraph/get-p-o @eg :ig-ctest/john)
@@ -245,7 +252,9 @@
                             (inc tally))
             ]
       (is (= (- (igraph/reduce-spo tally-triples 0 @eg)
-                (igraph/reduce-spo tally-triples 0 @initial-graph))
+                (if @initial-graph
+                  (igraph/reduce-spo tally-triples 0 @initial-graph)
+                  0))
              4)))
     ) ;; other utilities
   ))

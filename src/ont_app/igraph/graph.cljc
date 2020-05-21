@@ -103,8 +103,9 @@ The core type declaration:
   #?(:clj (Exception. msg)
      :cljs (js/Error msg)))
 
-(defn get-contents [g]
+(defn get-contents 
   "Returns (.contents g) or (.-contents g) appropriate to clj/cljs"
+  [g]
   #?(:clj
      (.contents g)
      :cljs
@@ -132,8 +133,9 @@ The core type declaration:
    ))
 
 
-(defn vector-of-triples [g]
+(defn vector-of-triples 
   "Returns (g) as [[<s> <p> <o>]...]"
+  [g]
   (with-meta
     (reduce-spo
      (fn [v s p o] (conj v [s p o]))
@@ -162,7 +164,8 @@ The core type declaration:
      :contents (merge-tree (g) to-add))))
 
 
-(defmethod add-to-graph [Graph :vector-of-vectors] [g triples]
+(defmethod add-to-graph [Graph :vector-of-vectors]
+  [g triples]
   "
 Where <triples> := [<v> ....]
 <v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] 
@@ -192,7 +195,7 @@ Where <triples> := [<v> ....]
     (add-to-graph g (vec the-seq))))
 
 
-(defn- -dissoc-in [map-or-set path]
+(defn- -dissoc-in 
   "removes the last key in <path> from its parent in <map-or-set>, removing
     any empty containers along the way.
 Where 
@@ -201,6 +204,7 @@ Where
 Note: typically used to inform removal of nodes in a graph, where <key> is 
   a subject, predicate or object
 "
+  [map-or-set path]
   (let [key (first path)
         ]
     (assert (not (empty? path)))
@@ -219,11 +223,12 @@ Note: typically used to inform removal of nodes in a graph, where <key> is
                  dissociated))))))
 
 
-(defn- shared-keys [m1 m2]
+(defn- shared-keys 
   "Returns {<shared key>...} for <m1> and <m2>
 Where
 <shared key> is a key in both maps <m1> and <m2>
 "
+  [m1 m2]
   (set/intersection (set (keys m1))
                     (set (keys m2))))
 
@@ -253,7 +258,8 @@ Where
                          (g)
                          (shared-keys (g) to-remove))))))
 
-(defmethod remove-from-graph [Graph :vector-of-vectors] [g triples]
+(defmethod remove-from-graph [Graph :vector-of-vectors]
+  [g triples]
   "
 Where <triples> := [<v> ....]
 <v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] , or [<s>] or [<s> <p>]
@@ -343,7 +349,7 @@ Note:
   (and (keyword? spec)
        (not (nil? (re-matches #"^\?.*" (name spec))))))
 
-^reduce-fn
+;; ^reduce-fn
 (defn- -collect-o-match 
   "
   Adds new <match> to `matches` for `next-o` in `context`
@@ -392,7 +398,7 @@ Note:
     (conj matches (reduce collect-bindings {} [:s :p :o]))))
 
 
-^reduce-fn
+;; ^reduce-fn
 (defn- -collect-p-o-matches
   "Returns <matches>' for <g> in <context> given <next-p>
   Where
@@ -693,7 +699,7 @@ Where
     (vec (map (partial triplify-var binding)
               (filter query-var? (keys binding))))))
 
-^reduce-fn
+;; ^reduce-fn
 (defn- -collect-clause-matches
   "Returns <query-state> modified for matches to <clause> in <g>
   Where

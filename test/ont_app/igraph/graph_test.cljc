@@ -59,10 +59,10 @@
                       [:person :subClassOf :thing]
                       ]))
 
-^traversal-fn
+;; ^traversal-fn
 (def subClassOf* (igraph/transitive-closure :subClassOf))
 
-^traversal-fn
+;; ^traversal-fn
 (defn isa->subClassOf* [g context acc queue]
   [context
    (->> queue 
