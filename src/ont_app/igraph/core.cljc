@@ -560,8 +560,6 @@ An inferred 'uncle' relation.
   ;; TODO: consider moving examples above into the README
   [comp-spec]
   {:pre [(or (not (:path comp-spec)) (vector? (:path comp-spec)))
-         (doseq [path-spec (:path comp-spec)]
-           (assert (comp-spec path-spec)))
          ] ;; TODO use clojure.spec
    }
   (let [comp-spec (if (vector? comp-spec) ;; short form, convert to long form
