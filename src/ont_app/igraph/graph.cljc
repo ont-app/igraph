@@ -166,10 +166,8 @@ The core type declaration:
 
 (defmethod add-to-graph [Graph :vector-of-vectors]
   [g triples]
-  "
-Where <triples> := [<v> ....]
-<v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] 
-"
+  ;; Where <triples> := [<v> ....]
+  ;; <v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] 
   (let [collect-triple (fn [s acc [p o]]
                          (update-in acc
                                     [s p]
@@ -260,16 +258,14 @@ Where
 
 (defmethod remove-from-graph [Graph :vector-of-vectors]
   [g triples]
-  "
-Where <triples> := [<v> ....]
-<v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] , or [<s>] or [<s> <p>]
-<s> is a subject in <g>
-<p> is a predicate for <s> in <g>
-<o> is an object for <s> and <p> in <g>
-Note: 
-<v> = [<s>] signals that all {<p> <o>} s.t. (<g> <s>) should be removed.
-<v> = [<s> <p>] signals that all <o> s.t. (<g> <s> <p>) should be removed
-"
+  ;; Where <triples> := [<v> ....]
+  ;; <v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] , or [<s>] or [<s> <p>]
+  ;; <s> is a subject in <g>
+  ;; <p> is a predicate for <s> in <g>
+  ;; <o> is an object for <s> and <p> in <g>
+  ;; Note: 
+  ;; <v> = [<s>] signals that all {<p> <o>} s.t. (<g> <s>) should be removed.
+  ;; <v> = [<s> <p>] signals that all <o> s.t. (<g> <s> <p>) should be removed
   (let [remove-triple (fn [s acc [p o]]
                         (-dissoc-in acc [s p o]))
         collect-vector (fn [acc v]
@@ -289,9 +285,8 @@ Note:
 
 (defmethod remove-from-graph [Graph :vector]
   [g to-remove]
-  "Where
-<to-remove> may be [s] [s p] [s p o]
-"
+  ;; Where
+  ;; <to-remove> may be [s] [s p] [s p o]
   (if (empty? to-remove)
     g
     (do
@@ -304,7 +299,7 @@ Note:
 
 (defmethod remove-from-graph [Graph :underspecified-triple]
   [g to-remove]
-  "Underspecified-vector is a distinction without a difference at this point"
+  ;; Underspecified-vector is a distinction without a difference at this point
   (let [f (get-method remove-from-graph [Graph :vector])]
     (f g to-remove)))
 
