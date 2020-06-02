@@ -1,5 +1,6 @@
 <img src="http://ericdscott.com/NatlexLogoLarge.png" alt="NaturalLexicon logo" :width=100 height=100/>
-# `ont-app/igraph`
+
+# ont-app/igraph
 
 IGraph defines a protocol which aims to provide a general interface to
 a variety of graph-based representations (RDF, datascript, datomic,
