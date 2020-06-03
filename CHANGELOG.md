@@ -1,6 +1,8 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## [0.1.5] - 2020-06-3
+### Added q
 ## [0.1.4] - 2020-02-25
 ### Added
 - P-arguments can now be traversal functions mapping s to a set of o's.
@@ -21,3 +23,4 @@ All notable changes to this project will be documented in this file. This change
 ### Added
 - Subtraction functions to the IGraph protocol, with support in Graph
 
+q
