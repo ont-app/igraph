@@ -1,4 +1,6 @@
-# igraph
+<img src="http://ericdscott.com/NaturalLexiconLogo.png" alt="NaturalLexicon logo" :width=100 height=100/>
+
+# ont-app/igraph
 
 IGraph defines a protocol which aims to provide a general interface to
 a variety of graph-based representations (RDF, datascript, datomic,
@@ -11,8 +13,8 @@ There is a [15-minute video introduction here](https://www.youtube.com/watch?v=B
 ## Contents
 - [Dependencies](#h2-dependencies)
 - [Motivation](#h2-motivation)
-- [The IGraph protocol](#The_IGraph_protocol)
-  - [Methods summary](#IGraph_methods_summary)
+- [The IGraph protocol](#h2-igraph-protocol)
+  - [Methods summary](#h3-methods-summary)
   - [Member access](#Member_access)
     - [Normal form](#Normal_form)
     - [Tractability](#h4-tractability)
@@ -35,8 +37,8 @@ There is a [15-minute video introduction here](https://www.youtube.com/watch?v=B
 - [The IGraphAccumulateOnly protocol](#IGraphAccumulateOnly)
     - [`claim`](#claim_method)
     - [`retract`](#retract_method)
-- [The IGraphSet protocol](#The_IGraphSet_protocol)
-  - [Methods summary](#IGraphSet_methods_summary)
+- [The IGraphSet protocol](#h2-igraphset-protocol)
+  - [Methods summary](#h3-igraphset-methods-summary)
   - [`union`](#union_method)
   - [`intersection`](#intersection_method)
   - [`difference`](#difference_method)
@@ -51,8 +53,8 @@ There is a [15-minute video introduction here](https://www.youtube.com/watch?v=B
     - [`maybe-traverse-link`](#h4-maybe-traverse-link)
     - [`traverse-or`](#h4-traverse-or)
   - [Traversal composition with `t-comp`](#Traversal_composition)
-    - [Short form](#t-comp_short_form)
-    - [Long form](#t-comp_long_form)
+    - [short form](#h4-t-comp-short)
+    - [long form](#h4-t-comp-long)
   - [Using traversal functions as a `p` argument to `invoke`](#traversal-fn-as-p)
 - [Cardinality-1 utilites](#cardinality-1_utilities)
   - [`unique`](#h3-unique)
@@ -73,6 +75,7 @@ There is a [15-minute video introduction here](https://www.youtube.com/watch?v=B
   - [datomic-client](#h3-datomic-client)
 - [Acknowledgements](#h2-acknowledgements)
 - [Future Work](#h2-future-work)
+- [License](#h2-license)
 ---
 
 <a name="h2-dependencies"></a>
@@ -84,7 +87,7 @@ This is deployed to [clojars](https://clojars.org/ont-app/igraph):
 Project](https://img.shields.io/clojars/v/ont-app/igraph.svg)](https://clojars.org/ont-app/igraph)
 
 ```
-[ont-app/igraph "0.1.4"]
+[ont-app/igraph "0.1.5"]
 ```
 
 Require thus:
@@ -120,7 +123,7 @@ This is informed to a large degree by the
 with [linked data](https://www.wikidata.org/wiki/Q515701) encoded in
 RDF, while keeping direct dependencies to a minimum.
 
-<a name="The_IGraph_protocol"></a>
+<a name="h2-igraph-protocol"></a>
 ## The IGraph protocol
 
 This protocol defines the basic operations over a graph conceived of
@@ -133,7 +136,7 @@ these identifiers adhere strictly to RDF specifications for URIs, and
 that literal values be restricted to a small set of scalars is relaxed
 quite a bit.
 
-<a name="IGraph_methods_summary"></a>
+<a name="h3-methods-summary"></a>
 ### Methods summary
 
 The `IGraph` protocol specifies the following methods:
@@ -581,7 +584,7 @@ g' now points to the most recent state of g's
 An error should be thrown if `(mutablility g)` != ::igraph/accumulate-only.
 
 
-<a name="The_IGraphSet_protocol"></a>
+<a name="h2-igraphset-protocol"></a>
 ## The IGraphSet protocol
 
 It will make sense for many implementations of IGraph also to
@@ -599,7 +602,7 @@ For purposes of demonstration, let's assume a second graph `other-eg`:
 
 I think examples of each operation should serve to describe them.
 
-<a name="IGraphSet_methods_summary"></a>
+<a name="h3-igraphset-methods-summary"></a>
 ### Methods summary
 - `(union g1 g2)` -> A new graph with all triples from both graphs
 - `(difference g1 g2)` -> A new graph with triples in g1 not also in
@@ -896,8 +899,8 @@ subsumed-by
 Composition functions are composable with a 'short form' and a 'long
 form'.
 
-<a name="t-comp_short_form"></a>
-#### Short form
+<a name="h4-t-comp-short"></a>
+#### short form
 
 Short-form composition can be used when the traversal function meets
 the following criteria:
@@ -917,10 +920,8 @@ Such functions can be called as a simple vector:
 >
 ```
 
-Note that _:isa_ is coerced automatically into a _traverse_link_.
-
-<a name="t-comp_long_form"></a>
-#### Long form
+<a name="h4-t-comp-long"></a>
+#### long form
 
 In cases where you want to compose a traversal function that cannot
 meet the criteria above, then instead of passing to `traversal-comp` a
@@ -1314,9 +1315,21 @@ This implements IGraph for the [Datomic Client API](https://docs.datomic.com/clo
 Thanks to [Ram Krishnan](https://github.com/kriyative) for his
 feedback and advice.
 
+<a name="h2-license"></a>
 ## License
 
 Copyright © 2019-20 Eric D. Scott
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
+
+<table>
+<tr>
+<td width=75>
+<img src="http://ericdscott.com/NaturalLexiconLogo.png" alt="Natural Lexicon logo" :width=50 height=50/> </td>
+<td>
+<p>Natural Lexicon logo - Copyright © 2020 Eric D. Scott. Artwork by Athena M. Scott.</p>
+<p>Released under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International license</a>. Under the terms of this license, if you display this logo or derivates thereof, you must include an attribution to the original source, with a link to https://github.com/ont-app, or  http://ericdscott.com. </p> 
+</td>
+</tr>
+<table>

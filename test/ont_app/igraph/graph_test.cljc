@@ -3,10 +3,7 @@
    #?(:cljs [cljs.test :refer-macros [async deftest is testing]]
       :clj [clojure.test :refer :all])
    [ont-app.igraph.core :as igraph]
-   ;; :refer [unique normal-form
-   ;;                      add
-   ;;                      transitive-closure]]
-   [ont-app.igraph.graph :as g] ;;:refer [make-graph]]
+   [ont-app.igraph.graph :as g] 
    [ont-app.igraph.core-test :as ct]
    ))
 
@@ -59,10 +56,10 @@
                       [:person :subClassOf :thing]
                       ]))
 
-^traversal-fn
+;; ^traversal-fn
 (def subClassOf* (igraph/transitive-closure :subClassOf))
 
-^traversal-fn
+;; ^traversal-fn
 (defn isa->subClassOf* [g context acc queue]
   [context
    (->> queue 
@@ -302,8 +299,8 @@
        (let [test-path (igraph/write-to-file "/tmp/igraph-test.edn" test-graph)
              test-graph' (igraph/read-from-file (g/make-graph) test-path)
              ]
-         (is (.exists (clojure.java.io/as-file test-path))
-             true)
+         (is (= (.exists (clojure.java.io/as-file test-path))
+                true))
          (is (= (igraph/normal-form test-graph')
                 (igraph/normal-form test-graph)))
          (clojure.java.io/delete-file test-path)))))
