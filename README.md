@@ -1,4 +1,4 @@
-<img src="http://ericdscott.com/NatlexLogoLarge.png" alt="NaturalLexicon logo" :width=100 height=100/>
+<img src="http://ericdscott.com/NaturalLexiconLogo.png" alt="NaturalLexicon logo" :width=100 height=100/>
 
 # ont-app/igraph
 
@@ -72,6 +72,7 @@ It also defines a `Graph` datatype which implements `IGraph`.
   - [datascript-graph](#h3-datascript-graph)
   - [datomic-client](#h3-datomic-client)
 - [Future Work](#h2-future-work)
+- [License](#h2-license)
 ---
 
 <a name="h2-dependencies"></a>
@@ -1298,6 +1299,7 @@ This implements IGraph for the [Datomic Client API](https://docs.datomic.com/clo
 - Some kind of a scheme to bring all the various query formats under a
   single tent.
 
+<a name="h2-license"></a>
 ## License
 
 Copyright © 2019 Eric D. Scott
@@ -1308,9 +1310,10 @@ your option) any later version.
 <table>
 <tr>
 <td width=75>
-<img src="http://ericdscott.com/NatlexLogoLarge.png" alt="NaturalLexicon logo" :width=50 height=50/> </td><td>
-Natural Lexicon logo - Copyright © 2020 Eric D. Scott, released under [Creative Commons Attribution-ShareAlike 4.0 International license](https://creativecommons.org/licenses/by-sa/4.0/).  Artwork by Athena M. Scott.
-
-Under the terms of this license, if you display this logo or derivates thereof, you must include an attribution to the original source, with a link to https://github.com/ont-app, or  http://ericdscott.com. </td>
+<img src="http://ericdscott.com/NaturalLexiconLogo.png" alt="Natural Lexicon logo" :width=50 height=50/> </td>
+<td>
+<p>Natural Lexicon logo - Copyright © 2020 Eric D. Scott. Artwork by Athena M. Scott.</p>
+<p>Released under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International license</a>. Under the terms of this license, if you display this logo or derivates thereof, you must include an attribution to the original source, with a link to https://github.com/ont-app, or  http://ericdscott.com. </p> 
+</td>
 </tr>
 <table>
