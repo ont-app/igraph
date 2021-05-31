@@ -263,7 +263,7 @@
 
 (deftest readme-immutable
   (testing "IGraphImmutable"
-    (when (= (igraph/mutability @eg) ::igraph/immutable)
+    (when (and @eg (= (igraph/mutability @eg) ::igraph/immutable))
       (is (= (satisfies? igraph/IGraphImmutable @eg)
              true))
       (is (= (igraph/normal-form 
