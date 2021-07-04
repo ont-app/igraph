@@ -15,7 +15,7 @@
 
 
 ;; FUN WITH READER MACROS
-(def cljs-LazySeq #?(:clj clojure.lang.LazySeq
+(def cljc-LazySeq #?(:clj clojure.lang.LazySeq
                      :cljs cljs.core/LazySeq))
 
 ;; No reader macros below this point
@@ -131,7 +131,7 @@
                                          (set (igraph/subjects @initial-graph)))
                  #{:ig-ctest/john :ig-ctest/mary})))
       (is (= (type (igraph/subjects @eg))
-             cljs-LazySeq))
+             cljc-LazySeq))
       (is (= (igraph/get-p-o @eg :ig-ctest/john)
              {:ig-ctest/isa #{:ig-ctest/person},
               :ig-ctest/likes #{:ig-ctest/beef}}))
