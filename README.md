@@ -85,7 +85,7 @@ This is deployed to [clojars](https://clojars.org/ont-app/igraph):
 Project](https://img.shields.io/clojars/v/ont-app/igraph.svg)](https://clojars.org/ont-app/igraph)
 
 ```
-[ont-app/igraph "0.1.5"]
+[ont-app/igraph "0.1.6"]
 ```
 
 Require thus:
@@ -1316,7 +1316,8 @@ feedback and advice.
 <a name="h2-license"></a>
 ## License
 
-Copyright © 2019-20 Eric D. Scott
+
+Copyright © 2019-21 Eric D. Scott
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.

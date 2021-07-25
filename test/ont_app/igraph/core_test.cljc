@@ -15,7 +15,7 @@
 
 
 ;; FUN WITH READER MACROS
-(def cljs-LazySeq #?(:clj clojure.lang.LazySeq
+(def cljc-LazySeq #?(:clj clojure.lang.LazySeq
                      :cljs cljs.core/LazySeq))
 
 ;; No reader macros below this point
@@ -24,7 +24,7 @@
 
 (def subClassOf* (igraph/transitive-closure :ig-ctest/subClassOf))
 
-(def initial-graph "Holds graph with any required schema content"
+(def initial-graph "Holds graph with any required schema content. Otherwise nil."
   (atom nil))
 
 (def eg-data "Initial data for the `eg` graph"
@@ -118,7 +118,7 @@
                  {})))
       (is (= (igraph/normal-form
               (sans-schema @eg))
-              eg-data))
+             eg-data))
       (is (= eg-data
              {:ig-ctest/john {:ig-ctest/isa #{:ig-ctest/person},
                               :ig-ctest/likes #{:ig-ctest/beef}},
@@ -131,7 +131,7 @@
                                          (set (igraph/subjects @initial-graph)))
                  #{:ig-ctest/john :ig-ctest/mary})))
       (is (= (type (igraph/subjects @eg))
-             cljs-LazySeq))
+             cljc-LazySeq))
       (is (= (igraph/get-p-o @eg :ig-ctest/john)
              {:ig-ctest/isa #{:ig-ctest/person},
               :ig-ctest/likes #{:ig-ctest/beef}}))
@@ -167,7 +167,7 @@
                true))))
 
     ;; TODO: add any future examples from README for mutable graphs
-      
+    
     (testing "Traversal"
       ;; there may be schema-related stuff in the implementation graph,
       ;; which is OK
@@ -212,7 +212,7 @@
             ]
         (is (= (igraph/traverse @eg-with-types instance-of #{} [:ig-ctest/john])
                #{:ig-ctest/person :ig-ctest/thing})))
-    
+      
       (is (= (@eg-with-types :ig-ctest/beef subClassOf*)
              #{:ig-ctest/consumable :ig-ctest/beef
                :ig-ctest/meat
@@ -225,45 +225,45 @@
                :ig-ctest/beef :ig-ctest/meat :ig-ctest/food :ig-ctest/thing}))
       ) ;; traversal
 
-  (testing "Cardinality-1 utilities"
-    (is (= (igraph/unique (@eg-with-types :ig-ctest/john :ig-ctest/isa))
-           :ig-ctest/person))
-    (is (#{:ig-ctest/consumable
-           :ig-ctest/beef :ig-ctest/meat :ig-ctest/food :ig-ctest/thing}
-         (igraph/unique (@eg-with-types :ig-ctest/beef subClassOf*)
-                        first)))
-           
-    (is (= (igraph/flatten-description (@eg-with-types :ig-ctest/john))
-           {:ig-ctest/isa :ig-ctest/person, :ig-ctest/likes :ig-ctest/beef}))
-    (is (= (igraph/flatten-description (@eg-for-cardinality-1 :ig-ctest/john))
-           {:ig-ctest/isa :ig-ctest/person,
-            :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer},
-            :ig-ctest/has-vector [1 2 3]}))
+    (testing "Cardinality-1 utilities"
+      (is (= (igraph/unique (@eg-with-types :ig-ctest/john :ig-ctest/isa))
+             :ig-ctest/person))
+      (is (#{:ig-ctest/consumable
+             :ig-ctest/beef :ig-ctest/meat :ig-ctest/food :ig-ctest/thing}
+           (igraph/unique (@eg-with-types :ig-ctest/beef subClassOf*)
+                          first)))
       
-    (is (= (igraph/normalize-flat-description 
-            {:ig-ctest/isa :ig-ctest/person,
-             :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer},
-             :ig-ctest/has-vector [1 2 3]})
-           {:ig-ctest/isa #{:ig-ctest/person},
-            :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer},
-            :ig-ctest/has-vector #{[1 2 3]}}))) ;; cardinality-1 utils
-     
-  (testing "Other utilites"
-    (letfn [(tally-triples [tally s p o]
-                            (inc tally))
-            ]
-      (is (= (- (igraph/reduce-spo tally-triples 0 @eg)
-                (if @initial-graph
-                  (igraph/reduce-spo tally-triples 0 @initial-graph)
-                  0))
-             4)))
-    ) ;; other utilities
-  ))
+      (is (= (igraph/flatten-description (@eg-with-types :ig-ctest/john))
+             {:ig-ctest/isa :ig-ctest/person, :ig-ctest/likes :ig-ctest/beef}))
+      (is (= (igraph/flatten-description (@eg-for-cardinality-1 :ig-ctest/john))
+             {:ig-ctest/isa :ig-ctest/person,
+              :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer},
+              :ig-ctest/has-vector [1 2 3]}))
+      
+      (is (= (igraph/normalize-flat-description 
+              {:ig-ctest/isa :ig-ctest/person,
+               :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer},
+               :ig-ctest/has-vector [1 2 3]})
+             {:ig-ctest/isa #{:ig-ctest/person},
+              :ig-ctest/likes #{:ig-ctest/beef :ig-ctest/beer},
+              :ig-ctest/has-vector #{[1 2 3]}}))) ;; cardinality-1 utils
+    
+    (testing "Other utilites"
+      (letfn [(tally-triples [tally s p o]
+                (inc tally))
+              ]
+        (is (= (- (igraph/reduce-spo tally-triples 0 @eg)
+                  (if @initial-graph
+                    (igraph/reduce-spo tally-triples 0 @initial-graph)
+                    0))
+               4)))
+      ) ;; other utilities
+    ))
 
 
 (deftest readme-immutable
   (testing "IGraphImmutable"
-    (when (= (igraph/mutability @eg) ::igraph/immutable)
+    (when (and @eg (= (igraph/mutability @eg) ::igraph/immutable))
       (is (= (satisfies? igraph/IGraphImmutable @eg)
              true))
       (is (= (igraph/normal-form 
@@ -289,7 +289,7 @@
                               :ig-ctest/likes #{:ig-ctest/chicken}}}))
       
       (let [g (igraph/assert-unique @eg
-                                  :ig-ctest/john :ig-ctest/isa :ig-ctest/man)]
+                                    :ig-ctest/john :ig-ctest/isa :ig-ctest/man)]
         (is (= (g :ig-ctest/john)
                {:ig-ctest/likes #{:ig-ctest/beef},
                 :ig-ctest/isa #{:ig-ctest/man}})))
@@ -298,7 +298,7 @@
 
 
 (def mutable-eg "Initialized with `eg-data`. Test for mutable graphs"
-    (atom nil))
+  (atom nil))
 
 (deftest readme-mutable
   (testing "IGraphMutable"
@@ -337,6 +337,27 @@
       ;; todo test assert-unique
 
       )))
+
+(deftest readme-add!-long-vector
+  "Tests cases where we add! a vector longer than a triple"
+  (when @mutable-eg
+    (let [moe-graph (-> (g/make-graph)
+                        (igraph/add [:ig-ctest/moe
+                                     :ig-ctest/isa :ig-ctest/person
+                                     :ig-ctest/likes :ig-ctest/meat]))
+          ]
+      (is 
+       (= (igraph/normal-form
+           (igraph/intersection
+            (g/make-graph :contents
+                          (-> @mutable-eg
+                              (igraph/add! [:ig-ctest/moe
+                                            :ig-ctest/isa :ig-ctest/person
+                                            :ig-ctest/likes :ig-ctest/meat])
+                              (igraph/normal-form)))
+            moe-graph))
+          (igraph/normal-form moe-graph))))))
+
 ;; TODO: add test for IGraphAccumulateOnly
 
 (deftest readme-set-operations
@@ -365,4 +386,4 @@
   )
 
 
-  
+
