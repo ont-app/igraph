@@ -7,6 +7,7 @@ With variables of the form :?x.
 
 The core type declaration:
 
+```
 (deftype Graph [schema contents]
   
   IGraph
@@ -29,7 +30,8 @@ The core type declaration:
   (union [g1 g2] (add-to-graph g1 (g2)))
   (intersection [g1 g2] (get-intersection g1 g2))
   (difference [g1 g2] (remove-from-graph g1 (g2)))
-  )</pre></div><div class="public anchor" id="var-cljc-lazy-seq"><h3>cljc-lazy-seq</h3><div class="usage"></div><div class="doc"><pre class="plaintext"></pre></div></div><div class="public anchor" id="var-get-contents"><h3>get-contents</h3><div class="usage"><code>(get-contents g)</code></div><div class="doc"><pre class="plaintext">Returns (.contents g) or (.-contents g) appropriate to clj/cljs
+  )
+```</pre></div><div class="public anchor" id="var-cljc-lazy-seq"><h3>cljc-lazy-seq</h3><div class="usage"></div><div class="doc"><pre class="plaintext"></pre></div></div><div class="public anchor" id="var-get-contents"><h3>get-contents</h3><div class="usage"><code>(get-contents g)</code></div><div class="doc"><pre class="plaintext">Returns (.contents g) or (.-contents g) appropriate to clj/cljs
 </pre></div></div><div class="public anchor" id="var-make-graph"><h3>make-graph</h3><div class="usage"><code>(make-graph &amp; {:keys [contents], :or {contents {}}})</code></div><div class="doc"><pre class="plaintext">Returns `graph`, intialized per optional `contents`
 Where
 -   `graph` is an instance of the `Graph` type, which implments `IGraph`, `Ifn` and `ISet`
