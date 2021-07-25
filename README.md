@@ -6,6 +6,8 @@ loom, ...)
 
 It also defines a `Graph` datatype which implements `IGraph`.
 
+There is a [15-minute video introduction here](https://www.youtube.com/watch?v=BlH__4iNHZE&amp;feature=youtu.be).
+
 ## Contents
 - [Dependencies](#h2-dependencies)
 - [Motivation](#h2-motivation)
@@ -41,7 +43,7 @@ It also defines a `Graph` datatype which implements `IGraph`.
 - [Traversal](#Traversal)
   - [The `traverse` function](#traverse_function)
   - [Traversal functions](#Traversal_functions)
-    - [context](#h4-context)
+    - [Context](#h4-context)
     - [The queue](#queue)
   - [Traversal utilities](#Traversal_utilities)
     - [`transitive-closure`](#h4-transitive-closure)
@@ -52,7 +54,7 @@ It also defines a `Graph` datatype which implements `IGraph`.
     - [short form](#h4-t-comp-short)
     - [long form](#h4-t-comp-long)
   - [Using traversal functions as a `p` argument to `invoke`](#traversal-fn-as-p)
-- [cardinality-1 utilites](#cardinality-1_utilities)
+- [Cardinality-1 utilites](#cardinality-1_utilities)
   - [`unique`](#h3-unique)
   - [`flatten-description`](#h3-flatten-description)
   - [`normalize-flat-description`](#h3-normalize-flat-description)
@@ -69,6 +71,7 @@ It also defines a `Graph` datatype which implements `IGraph`.
   - [sparql-client](#h3-sparql-client)
   - [datascript-graph](#h3-datascript-graph)
   - [datomic-client](#h3-datomic-client)
+- [Acknowledgements](#h2-acknowledgements)
 - [Future Work](#h2-future-work)
 - [License](#h2-license)
 ---
@@ -145,7 +148,7 @@ The `IGraph` protocol specifies the following methods:
 - `(query g q)` -> implementation-dependent query results
 
 #### Content manipulation
-- `(mutability g)` -> One of `#{::read-only ::immutable ::mutable :accumulate-only}`
+- `(mutability g)` -> One of `#{::read-only ::immutable ::mutable ::accumulate-only}`
 
 #### `invoke` to support `IFn`
 - `(g)` = `(normal-form g)`
@@ -178,7 +181,7 @@ As an example, let's start with a graph called 'eg' with four triples:
 These are facts about two subjects, :john and :mary with two facts
 each.
 
-John is a person who likes meat.
+John is a person who likes beef.
 
 Mary is also a person, and likes chicken.
 
@@ -286,7 +289,8 @@ native representation. This example uses the format expected by
 ```
 
 In this case, the result is a set of `binding maps`, mapping
-:?variables to values, similar to the result set of a SPARQL query.
+:?variables to values, similar to the result set of a
+[SPARQL](https://www.wikidata.org/wiki/Q54871) query.
 
 For comparison, here is a sketch of an equivalent SPARQL query, which
 would be appropriate if our IGraph protocol was targeted to a SPARQL
@@ -297,7 +301,7 @@ endpoint which we might call `sparql-eg`:
   "PREFIX : <http://path/to/my/ns#> 
    SELECT * WHERE 
    {
-     ?person :isa :person
+     ?person a :person
    }")
 [{:person :mary} {:person :john}]
 > 
@@ -319,7 +323,7 @@ Without arguments, it must return Normal Form (or throw an ::igraph/Intractable)
 
 ```
 
-With a single "S" argument, it must treat the argument as the subject
+With a single "s" argument, it must treat the argument as the subject
 of get-p-o:
 
 ```
@@ -328,7 +332,7 @@ of get-p-o:
 >
 ```
 
-With two arguments "S" and "P", a set of objects must be returned:
+With two arguments "s" and "p", a set of objects must be returned:
 
 ```
 > (eg :mary :likes)
@@ -340,7 +344,7 @@ This will often be the value of `get-o`, but it may also accept as the
 "p" argument a _traversal function_, described
 [below](#traversal-fn-as-p).
 
-With three arguments "S" "P" and "O", the response must be truthy:
+With three arguments "s" "p" and "o", the response must be truthy:
 
 ```
 > (eg :mary :likes :chicken)
@@ -352,13 +356,13 @@ nil
 >
 ```
 
-This will often be equivalent to `ask`, but again, the "P" argument
+This will often be equivalent to `ask`, but again, the "p" argument
 can be a traversal function, described [below](#traversal-fn-as-p).
 
 <a name="Content_Manipulation"></a>
 ### Content Manipulation
 
-There a various factors to take into account when adding or removing
+There a several factors to take into account when adding or removing
 content from a graph.
 
 Some graphs, (such as a public SPARQL endpoint to which one does not
@@ -380,14 +384,14 @@ The `mutability` method returns one of the following values
   [IGraphImmutable](#IGraphImmutable)
 - `::igraph/mutable` - the graph implements
   [IGraphMutable](#IGraphMutable)
-- `::igraph/accumulate-only - the graph implements [IGraphAccumulateOnly](#IGraphAccumulateOnly), the approach used in Datomic
+- `::igraph/accumulate-only` - the graph implements [IGraphAccumulateOnly](#IGraphAccumulateOnly), the approach used in Datomic
 
 <a name="add-to-graph"></a>
 #### The `add-to-graph` multimethod
 
 IGraph defines a multimethod `add-to-graph`, dispatched on the type of
 graph, and a function `triples-format`. This multimethod can inform
-both mutable and immutable graphs.
+mutable, immutable and accumulate-only graphs.
 
 Naturally Normal Form is one possible format:
 
@@ -397,8 +401,8 @@ Naturally Normal Form is one possible format:
 >
 ```
 
-Another possible value is `:vector`, with a subject and an odd number
-of P-O specifications:
+Another possible value is `:vector`, with a subject and at least one
+P-O pair:
 
 ```
 > (igraph/triples-format [:john :likes :beef])
@@ -438,9 +442,9 @@ vector with fewer than 3 elements:
 >
 ```
 
-`triples-removal-format` assigns the :vector-of-vectors flag a vector
-of either :vector or :underspecified-vector. All implementations of
-IGraph should support each of these flags.
+`triples-removal-format` assigns the :vector-of-vectors flag to a
+vector of either :vector or :underspecified-vector. All
+implementations of IGraph should support each of these flags.
 
 This allows us to subtract any format that could also be added, plus
 all `[s * *]` or all `[s p *]`.
@@ -458,8 +462,7 @@ copy of the original graph modified per the argument provided.
 
 Calling `(add g to-add)` must return an immutable graph such that the
 graph now contains `to-add`. Any triples in `to-add` which are already
-in the graph are allowed, but implementations should not duplicate
-identical triples in the graph.
+in the graph should be skipped.
 
 See the notes above about the [add-to-graph](#add-to-graph)
 multimethod.
@@ -471,28 +474,28 @@ vector or a vector of vectors:
 > (igraph/normal-form 
     (igraph/add 
       eg 
-      [[:chicken :subclass-of :meat]
-       [:beef :subclass-of :meat]
+      [[:chicken :subClassOf :meat]
+       [:beef :subClassOf :meat]
        ]))
 {:john {:isa #{:person}, :likes #{:beef}},
  :mary {:isa #{:person}, :likes #{:chicken}},
- :chicken {:subclass-of #{:meat}},
- :beef {:subclass-of #{:meat}}}
+ :chicken {:subClassOf #{:meat}},
+ :beef {:subClassOf #{:meat}}}
 >
 ```
 
-We can add use Normal Form of one graph to add it to another.
+We can use the Normal Form of one graph to add it to another:
 
 ```
 > (meats)
-{:chicken {:subClass-of #{meat}}
- :beef {:subClass-of #{meat}}}
+{:chicken {:subClassOf #{meat}}
+ :beef {:subClassOf #{meat}}}
 >
 > (igraph/normal-form (add eg (meats)))
 {:john {:isa #{:person}, :likes #{:beef}},
  :mary {:isa #{:person}, :likes #{:chicken}},
- :chicken {:subclass-of #{:beef}},
- :beef {:subclass-of #{:beef}}}
+ :chicken {:subClassOf #{:beef}},
+ :beef {:subClassOf #{:beef}}}
 > 
 ```
 
@@ -523,15 +526,15 @@ methods `add!` and `subtract!`.
 The [add-to-graph](#add-to-graph) and
 [remove-from-graph](#remove-from-graph) multimethods should still
 inform the logic here, and the behavior should be essentially the
-same, with the exception that the graph returned is the same mutated
-object as was passed in to either of these methods.
+same, with the exception that the graph returned is the same object,
+mutated as specified.
 
 <a name="add!_method"></a>
 ### `add!`
 
 `(add! g to-add)` -> g, where g is both the argument and return value.
 
-An error should be thrown if `(mutablility g)` != :igraph/mutable.
+An error should be thrown if `(mutablility g)` != ::igraph/mutable.
 
 <a name="subtract!_method"></a>
 ### `subtract!`
@@ -539,18 +542,19 @@ An error should be thrown if `(mutablility g)` != :igraph/mutable.
 `(subtract! g to-subtract)` -> g, where g is both the argument and
 return value.
 
-An error should be thrown if `(mutablility g)` != :igraph/mutable.
+An error should be thrown if `(mutablility g)` != ::igraph/mutable.
 
 <a name="IGraphAccumulateOnly"></a>
 ## The IGraphAccumulateOnly protocol
 
 A graph whose native representation is based on
-[Datomic](https://www.datomic.com/) exects what Datomic calls an
+[Datomic](https://www.datomic.com/) implements what Datomic calls an
 "Accumulate-only" approach to adding and removing from a graph. To
 support this, the IGraphAccumulateOnly protocol provides methods
 `claim` (corresponding to the datomic 'add' operation), and
 `retract`. In this scheme the state of the graph can be rolled back to
-any point in its history. See the Datomic documentation for details.
+any point in its history. See the [Datomic
+documentation](https://docs.datomic.com/) for details.
 
 The [add-to-graph](#add-to-graph) and
 [remove-from-graph](#remove-from-graph) multimethods should still
@@ -566,7 +570,7 @@ given instantiation of the graph will remain immutable.
 g' now points to the most recent state of g's
 [transactor](https://docs.datomic.com/on-prem/transactor.html).
 
-An error should be thrown if `(mutablility g)` != :igraph/accumulate-only.
+An error should be thrown if `(mutablility g)` != ::igraph/accumulate-only.
 
 <a name="retract_method"></a>
 ### `retract`
@@ -575,7 +579,7 @@ An error should be thrown if `(mutablility g)` != :igraph/accumulate-only.
 g' now points to the most recent state of g's
 [transactor](https://docs.datomic.com/on-prem/transactor.html).
 
-An error should be thrown if `(mutablility g)` != :igraph/accumulate-only.
+An error should be thrown if `(mutablility g)` != ::igraph/accumulate-only.
 
 
 <a name="h2-igraphset-protocol"></a>
@@ -652,6 +656,7 @@ nessesarily a bit more involved.
 
 
 - `(traverse g traversal context acc queue)` -> `acc'`
+- `(traverse g traversal acc queue)` -> `acc'` ;; default context = {}
 
     ... traversing `g` per the `traversal` function, starting with the
     first element of `queue`, possibly informed by `context`.
@@ -693,7 +698,9 @@ eg-with-types
 ```
 
 Our `eg-with-types` now provides a bit more context for what's going
-on with our heroes John and Mary.
+on with our heroes John and Mary. Note that `:isa` and `:subClassOf`
+differ in their _domain_. `:isa` relates an instance to its class,
+while `:subClassOf` relates a class to its parent.
 
 <a name="traverse_function"></a>
 ### The `traverse` function
@@ -737,9 +744,9 @@ The first argument is the invariant graph itself.
 
 The second argument (and first element returned) is the context, which
 subClassOf* leaves unchanged.  Context is used by `traverse` to avoid
-cycles, and will be explained in detail [below](#h4-context), but let us
-state here that more sophisticated traversal functions may use the
-context as a kind of blackboard to guide the traversal.
+cycles, and will be explained in detail [below](#h4-context). More
+sophisticated traversal functions may use the context as a kind of
+blackboard.
 
 The third argument (and second element returned) is the value to be
 accumulated, identical to its counterpart in the _reduce_ idiom.
@@ -787,7 +794,7 @@ context:
   immediately with that value.
 
 In addition, the traversal function may use the context as a
-blackboard to communicate between iterations of the traversal. As an
+blackboard to communicate between iterations of the traversal. For
 example, you may want to prune and re-order your queue based on a set
 of heuristics, details of which are stored in the context.
 
@@ -817,9 +824,9 @@ functions.
 - `(trasitive-closure p)` -> `(fn [g context acc to-visit] ...) ->
   [context' acc' queue']`,
   
-  This returns a traversal function which will accumulate all `o`
-  s.t. any `s` in the queue is associated with `o` through zero or
-  more `p` links.
+  This returns a traversal function which will accumulate all _o_
+  s.t. any _s_ in the queue is associated with _o_ through zero or
+  more _p_ links.
 
 So in the example above, the `subClassOf*` function could be defined
 thus:
@@ -834,8 +841,8 @@ thus:
 - `(traverse-link p)` -> (fn [g context acc queue] ...) -> [context
   acc' []],
 
-The function returned here will accumulate all `o` s.t. for all `s` in
-`queue`, (g s p o) is truthy:
+The function returned here will accumulate all _o_ s.t. for all _s_ in
+_queue_, (g s p o) is truthy:
 
 ```
 > (igraph/traverse 
@@ -853,7 +860,7 @@ The function returned here will accumulate all `o` s.t. for all `s` in
 - `(maybe-traverse-link p)` -> (fn [g context acc queue] ...) ->
   [context acc' []]
 
-Matches 0 or 1 occurrences of `p`:
+Matches 0 or 1 occurrences of _p_:
 
 ```
 > (igraph/traverse eg-with-types 
@@ -870,7 +877,7 @@ Matches 0 or 1 occurrences of `p`:
 - `(traverse-or & ps)` -> (fn [g context acc queue] ...) -> [context
   acc' []],
 
-Where `ps` is one or more traversal functions, merging all of their outputs.
+Where _ps_ is one or more traversal functions, merging all of their outputs.
 
 Keyword arguments are interpreted as an implicit `traverse-link`.
 
@@ -914,7 +921,7 @@ Such functions can be called as a simple vector:
 <a name="h4-t-comp-long"></a>
 #### long form
 
-In cases where one wants to compose a traversal function that cannot
+In cases where you want to compose a traversal function that cannot
 meet the criteria above, then instead of passing to `traversal-comp` a
 vector of traversal functions, you pass in a map with the following
 keys:
@@ -922,10 +929,10 @@ keys:
 ```
 { :path  [:<traversal-stage-1> :<traversal-stage-2> ...]
    :<traversal-stage-1> {:fn <traversal-fn>
-                      :doc <docstring> (optional)
-                      :into <initial accumulator> (default [])
-                      :local-context-fn <context> (default nil)
-                      :update-global-context (default nil)
+                         :doc <docstring> (optional)
+                         :into <initial accumulator> (default [])
+                         :local-context-fn <context> (default nil)
+                         :update-global-context (default nil)
                       }
    :<traversal-stage-2> ...
    ...
@@ -959,11 +966,11 @@ interpret a map with the parameters described in the next section.
 
 If the spec is a keyword without an entry in the long-form map, it is
 assumed to be a candidate for an implicit traverse-link, i.e. a graph
-element in 'p' position in `g`.
+element in 'p' position in _g_.
 
 ##### traversal specification parameters
 
-- :fn - associated with a traversal function
+- :fn - a traversal function
 - :doc (optional) - a docstring
 - :into (optional) - a container to which the output should be coerced
   (default [])
@@ -980,7 +987,7 @@ element in 'p' position in `g`.
 Recall that implementations of IGraph should provide `invoke`
 functions with 0-3 arguments.
 
-Two of these functions involve specification of a `p` parameter:
+Two of these functions involve specification of a _p_ parameter:
 
 ```
 (g s p) -> {<o>...}
@@ -988,8 +995,8 @@ Two of these functions involve specification of a `p` parameter:
 (g s p o) -> truthy.
 ```
 
-This is informed by a multimethod dispatched on whether `p` is a
-function:
+This is informed by a multimethod dispatched on whether _p_ is a
+function.
 
 - `(match-or-traverse g s p)` -> #{<o>...}  
 - `(match-or-traverse g s p o)` -> truthy
@@ -1006,11 +1013,11 @@ these two method declarations:
   ...
 ```
 
-If the `p` argument is a function, then `p` will be expected to match
+If the _p_ argument is a function, then _p_ will be expected to match
 the signature of a traversal function, and the output of the method
-will be the value of its traversal, starting with queue [`s`].
+will be the value of its traversal, starting with queue [_s_].
 
-If `p` is not a function it will be matched directly against elements
+If _p_ is not a function it will be matched directly against elements
 of the graph.
 
 So given the traversal functions in the examples above:
@@ -1044,7 +1051,7 @@ The following utilities are provided to help with this:
 - `(unique [x]) -> x` - translates a singleton sequence to its only
   value
 - `(flatten-description (g s))` Automatically translates the p-o
-  description into a simple k-v mappings wherever only a single `v`
+  description into a simple k-v mappings wherever only a single _v_
   exists.
 - `(normalize-flat-description m)` is the inverse of
   `flatten-description`.
@@ -1070,7 +1077,7 @@ Execution error (ExceptionInfo) at ont-app.igraph.core/unique$fn (core.cljc:640)
 Unique called on non-unique collection
 >
 > (igraph/unique (eg-with-types :beef subClassOf*)
-                 first)
+                 first) ;; arbitrary disambiguation
 :consumable
 ```
 
@@ -1147,22 +1154,23 @@ pair of functions to read/write to the file system.
 ### `write-to-file`
 `(write-to-file [path g] ...) -> path`
 
-Will write an edn file with the normal form contents of `g`.
+Will write an edn file with the normal form contents of _g_.
 
 <a name="h3-read-from-file"></a>
 ### `read-from-file`
 
 `(read-from-file [g path] ...) -> g'`
 
-Will read the normal form contents of `path` into `g`.
+Will read the normal form contents of _path_ into _g_.
 
 <a name="Other_utilities"></a>
 ## Other utilities
 
 <a name="h3-reduce-spo"></a>
 ### `reduce-spo`
-- `(reduce-spo f acc g)` -> `acc'`, such that `f` is called on each triple in
-`g`.  Where `f` := `(fn [acc s p o]...) -> acc'`. Cf. [reduce-kv](https://clojuredocs.org/clojure.core/reduce-kv)
+- `(reduce-spo f acc g)` -> `acc'`, such that _f_ is called on each
+triple in _g_.  Where _f_ := `(fn [acc s p o]...) ->
+acc'`. Cf. [reduce-kv](https://clojuredocs.org/clojure.core/reduce-kv).
 
 ```
 > (defn tally-triples [tally s p o]
@@ -1175,7 +1183,7 @@ Will read the normal form contents of `path` into `g`.
 
 The `ont-app.igraph.graph` module makes one implementation of IGraph
 available without any additional dependencies, and so far there are
-two other libraries in the ont-app project which implement this
+three other libraries in the ont-app project which implement this
 protocol.
 
 Other implementations are planned, and I'd be interested to learn of
@@ -1184,12 +1192,12 @@ any implementations published by other parties.
 <a name="Graph"></a>
 ### `ont-app.igraph.graph/Graph`
 
-The IGraph library comes with `ont-app.igraph.graph`, whose Graph
+The IGraph library comes with `ont-app.igraph.graph`, whose `Graph`
 deftype is a very lightweight implementation of IGraph.
 
 Its native representation is just Normal Form. Any hashable object can
-technically be provided for any `s`, `p`, or `o`, but best practice is
-to keep non-identifiers a the `o` level if you want to play easily
+technically be provided for any _s_, _p_, or _o_, but best practice is
+to keep non-identifiers a the "o" level if you want to play easily
 with other IGraph implementations.
 
 ```
@@ -1238,7 +1246,7 @@ downstream from the call.
 >
 ```
 
-Traversal functions can be specified in `p` position:
+Traversal functions can be specified in _p_ position:
 
 ```
 > (igraph/query eg-with-types [[:?liker :likes ?liked]
@@ -1262,12 +1270,14 @@ Traversal functions can be specified in `p` position:
 
 <https://github.com/ont-app/sparql-client>
 
-Implements IGraph for a [SPARQL
+Implements a mutable IGraph for a [SPARQL
 endpoint](https://www.wikidata.org/wiki/Q26261192). Initializtion
 requires configuring query and update endpoints, and the query
 language is [SPARQL](https://www.wikidata.org/wiki/Q54871).
 
 Keyword identifiers are expected to be namespaced, and rely on the [ont-app/vocabulary](https://github.com/ont-app/vocabulary) library, which uses namespace metadata to intercede between Clojure namespaces and RDF namespaces.
+
+Set operations are not supported.
 
 <a name="h3-datascript-graph"></a>
 ### datascript-graph
@@ -1285,22 +1295,29 @@ operations.
 
 https://github.com/ont-app/datomic-client
 
-This implements IGraph for the [Datomic Client API](https://docs.datomic.com/cloud/client/client-api.html). The query language is datalog. Mutability model is Accumulate Only. There are no set operations.
+This implements IGraph for the [Datomic Client API](https://docs.datomic.com/cloud/client/client-api.html). The query language is datalog. Mutability model is Accumulate Only. Set operations are not supported.
 
 <a name="h2-future-work"></a>
 ## Future work
-- loom, ubergraph, and other graph-oriented libraries will be
-  ported to.
-- There will be an annotated-normal-form, providing annotations for
-  reified triples (for weights and such).
-- `igraph.graph` will have query planning and indexing.
+- Ports to loom, ubergraph, and other graph-oriented libraries 
+- There will be a regime for providing annotations for reified triples
+  (for weights and such).
+- Ports to table-based representations
+- `igraph.graph` will have query planning and indexing
 - Some kind of a scheme to bring all the various query formats under a
-  single tent.
+  single tent
+
+<a name="h2-acknowledgements"></a>
+## Acknowledgements
+
+Thanks to [Ram Krishnan](https://github.com/kriyative) for his
+feedback and advice.
 
 <a name="h2-license"></a>
 ## License
 
-Copyright © 2020-1 Eric D. Scott
+
+Copyright © 2019-21 Eric D. Scott
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
