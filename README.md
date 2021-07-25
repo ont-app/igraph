@@ -722,7 +722,7 @@ The arguments for `traverse` are
   defining the logic of each step in the traversal
 - `context` - (optional) a map holding the traversal history plus
   whatever `traversal-fn` may want to track. Default is {}
-- `acc` - accumulates the resulting value of the traversal
+- `acc` - (optional) accumulates the resulting value of the traversal. Default is `[]`.
 - `queue` - the starting queue
 
 <a name="Traversal_functions"></a>

@@ -325,7 +325,7 @@ NOTE: see Datomic documentation for details
   "Returns `acc` acquired by applying `traversal` to `g` starting with `queue`, informed by `context`
   Where
   -   `acc` is an arbitrary clojure 'accumulator' object (similar to a
-      reduce function)
+      reduce function). Default is `[]`.
   -   `traversal` := (fn [g context acc queue]...)
                      -> [`context'` `acc'` `queue'`]
   -   `g` is a graph
@@ -354,6 +354,8 @@ NOTE: see Datomic documentation for details
     transition functions, though such data is not referenced anywhere
     at this point.
 "
+  ([g traversal queue]
+   (traverse g traversal {:history #{}} [] queue))
   ([g traversal acc queue]
    (traverse g traversal {:history #{}} acc queue))
   ([g traversal context acc queue]

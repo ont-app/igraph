@@ -258,7 +258,16 @@
                     0))
                4)))
       ) ;; other utilities
+    (testing "Issue-4 default accumulator is []"
+      (is (= (igraph/traverse 
+              @eg-with-types 
+              (igraph/traverse-link :ig-ctest/isa) 
+              [:ig-ctest/john :ig-ctest/mary])
+             
+             [:ig-ctest/person :ig-ctest/person]))
+      )
     ))
+
 
 
 (deftest readme-immutable
