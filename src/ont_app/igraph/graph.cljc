@@ -2,8 +2,8 @@
 
 (ns ^{:author "Eric D. Scott",
       :doc "Implementation of a simple graph type implementing IGraph.
-On typically adds to it with [[<s> <p> <o>]...].
-One queries it with a simple graph pattern of the form [[<s> <p> <o>]...]
+On typically adds to it with [[`s` `p` `o`]...].
+One queries it with a simple graph pattern of the form [[`s` `p` `o`]...]
 With variables of the form :?x.
 
 The core type declaration:
@@ -68,7 +68,6 @@ The core type declaration:
 
 (declare query-graph) ;; defined below
 (declare get-intersection)
-(declare get-schema)
 (declare get-contents)
 
 (deftype Graph [contents]
@@ -99,7 +98,7 @@ The core type declaration:
   (difference [g1 g2] (remove-from-graph g1 (g2)))
   )
 
-(defn make-error [msg]
+#_(defn make-error [msg]
   #?(:clj (Exception. msg)
      :cljs (js/Error msg)))
 
@@ -119,11 +118,11 @@ The core type declaration:
   
   
 (defn make-graph
-  "Returns <graph>, intialized per optional <contents>
+  "Returns `graph`, intialized per optional `contents`
   Where
-  <graph> is an instance of the `Graph` type, which implments `IGraph`, `Ifn` and `ISet`
-  <contents> is a normal-form representation of initial contents.
-    see also igraph/normal-form.
+  -   `graph` is an instance of the `Graph` type, which implments `IGraph`, `Ifn` and `ISet`
+  -   `contents` is a normal-form representation of initial contents.
+  SEE ALSO: igraph/normal-form.
   "
   ([&{:keys [contents]
       :or {contents {}}}]
@@ -134,7 +133,7 @@ The core type declaration:
 
 
 (defn vector-of-triples 
-  "Returns (g) as [[<s> <p> <o>]...]"
+  "Returns (g) as [[`s` `p` `o`]...]"
   [g]
   (with-meta
     (reduce-spo
@@ -166,8 +165,8 @@ The core type declaration:
 
 (defmethod add-to-graph [Graph :vector-of-vectors]
   [g triples]
-  ;; Where <triples> := [<v> ....]
-  ;; <v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] 
+  ;; Where `triples` := [`v` ....]
+  ;; `v` := [`s` `p1` `o1` `p2` `o2` ...`pn` `on`] 
   (let [collect-triple (fn [s acc [p o]]
                          (update-in acc
                                     [s p]
@@ -194,12 +193,12 @@ The core type declaration:
 
 
 (defn- -dissoc-in 
-  "removes the last key in <path> from its parent in <map-or-set>, removing
+  "removes the last key in `path` from its parent in `map-or-set`, removing
     any empty containers along the way.
 Where 
-<map-or-set> is typically a sub-tree of graph contents
-<path> := [<key> ...]
-Note: typically used to inform removal of nodes in a graph, where <key> is 
+  - `map-or-set` is typically a sub-tree of graph contents
+  - `path` := [`key` ...]
+Note: typically used to inform removal of nodes in a graph, where `key` is 
   a subject, predicate or object
 "
   [map-or-set path]
@@ -222,9 +221,9 @@ Note: typically used to inform removal of nodes in a graph, where <key> is
 
 
 (defn- shared-keys 
-  "Returns {<shared key>...} for <m1> and <m2>
+  "Returns {`shared key`...} for `m1` and `m2`
 Where
-<shared key> is a key in both maps <m1> and <m2>
+  - `shared key` is a key in both maps `m1` and `m2`
 "
   [m1 m2]
   (set/intersection (set (keys m1))
@@ -258,14 +257,14 @@ Where
 
 (defmethod remove-from-graph [Graph :vector-of-vectors]
   [g triples]
-  ;; Where <triples> := [<v> ....]
-  ;; <v> := [<s> <p1> <o1> <p2> <o2> ...<pn> <on>] , or [<s>] or [<s> <p>]
-  ;; <s> is a subject in <g>
-  ;; <p> is a predicate for <s> in <g>
-  ;; <o> is an object for <s> and <p> in <g>
+  ;; Where `triples` := [`v` ....]
+  ;; `v` := [`s` `p1` `o1` `p2` `o2` ...`pn` `on`] , or [`s`] or [`s` `p`]
+  ;; `s` is a subject in `g`
+  ;; `p` is a predicate for `s` in `g`
+  ;; `o` is an object for `s` and `p` in `g`
   ;; Note: 
-  ;; <v> = [<s>] signals that all {<p> <o>} s.t. (<g> <s>) should be removed.
-  ;; <v> = [<s> <p>] signals that all <o> s.t. (<g> <s> <p>) should be removed
+  ;; `v` = [`s`] signals that all {`p` `o`} s.t. (`g` `s`) should be removed.
+  ;; `v` = [`s` `p`] signals that all `o` s.t. (`g` `s` `p`) should be removed
   (let [remove-triple (fn [s acc [p o]]
                         (-dissoc-in acc [s p o]))
         collect-vector (fn [acc v]
@@ -286,7 +285,7 @@ Where
 (defmethod remove-from-graph [Graph :vector]
   [g to-remove]
   ;; Where
-  ;; <to-remove> may be [s] [s p] [s p o]
+  ;; `to-remove` may be [s] [s p] [s p o]
   (if (empty? to-remove)
     g
     (do
@@ -304,10 +303,10 @@ Where
     (f g to-remove)))
 
 
-(defn get-intersection
+(defn- get-intersection
   "Returns a new graph whose triples are shared between `g1` and `g2`
   Where
-  <g1> and <g2> both implement IGraph.
+  -   `g1` and `g2` both implement IGraph.
   "
   [g1 g2]
   (let [collect-p
@@ -336,8 +335,8 @@ Where
 ;;; Support for simple queries
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                  
-(defn kw-starts-with-?
-  "Returns true iff <spec> is a symbol whose name
+(defn- kw-starts-with-?
+  "Returns true iff `spec` is a symbol whose name
   starts with ?. Default for query-var? parameter
   "
   [spec]
@@ -347,36 +346,34 @@ Where
 ;; ^reduce-fn
 (defn- -collect-o-match 
   "
-  Adds new <match> to `matches` for `next-o` in `context`
+  Adds new `match` to `matches` for `next-o` in `context`
   Where
-  <match> := {<var> <o>, ... }, as set of variable bindings
-  <matches> := [<match>, ...]
-  <next-o> is a graph element, the final element of a matching process for some
-    query clause
-  <context> is a graph representing the match context for some query clause
-    := {:s <fixed-desc> or <elt-desc>
-        :p <fixed-desc> or <elt-desc>
-        :o <open-desc>  or <elt-desc> 
-   <fixed-desc> := {:bound-to #{<var>}
-                   :value #{<value>}
+  -   `match` := {`var` `o`, ... }, as set of variable bindings
+  -   `matches` := [`match`, ...]
+  -   `next-o` is a graph element, the final element of a matching process for some
+      query clause
+  - `context` is a graph representing the match context for some query clause
+      := {:s `fixed-desc` or `elt-desc`
+          :p `fixed-desc` or `elt-desc`
+          :o `open-desc`  or `elt-desc` 
+  - `fixed-desc` := {:bound-to #{`var`}
+                   :value #{`value`}
                   }
      ... assigns one of the matching values encountered upstream
   
-   <elt-desc> := {:value #{<value>}
-                 :candidate #{<value>}
-                }
-    ... already matched to a fixed value specified in the clause itself
+  -   `elt-desc` := {:value #{`value`}
+                   :candidate #{`value`}
+                  }
+      ... already matched to a fixed value specified in the clause itself
 
-  <open-desc> := {:bound-to <var>
-                  :candidate #{<value>, ...}
-     ... waiting to be matched to values downstream
-
-  <var> is a variable
-  <value> is a graph element, a singleton subset of #{<candidate>, ...}
-    if candidates are specified.
-  <candidate> may be specified at the start of the clause matching based
-    on whether <var> was matched upstream in the query context
-
+  -   `open-desc` := {:bound-to `var`
+                    :candidate #{`value`, ...}
+       ... waiting to be matched to values downstream
+  -   `var` is a variable
+  -   `value` is a graph element, a singleton subset of #{`candidate`, ...}
+      if candidates are specified.
+  -   `candidate` may be specified at the start of the clause matching based
+      on whether `var` was matched upstream in the query context
   "
   [context matches next-o]
   (let [context (cond-> context ;; if o is a var, set next-o as value for var
@@ -395,47 +392,45 @@ Where
 
 ;; ^reduce-fn
 (defn- -collect-p-o-matches
-  "Returns <matches>' for <g> in <context> given <next-p>
+  "Returns `matches`' for `g` in `context` given `next-p`
   Where
-  <matches> := #{<match> ...}
-  <match> := {<var> <value>, ...}
-  <var> is a variable bound to either :s :p  or :o in <context>
-  <value> is a value associated with <var> in <g>
-  <g> is a Graph
-  <next-p> is either a graph element or a traversal function
-  <context> is a graph representing the match context for some query clause
-    := {:s <fixed-desc> or <elt-desc>
-        :p <open-desc> or <elt-desc>
-        :o <open-desc> or <elt-desc>
-       }
-  <fixed-desc> := {:bound-to #{<var>}
-                   :value #{<value>}
+  -   `matches` := #{`match` ...}
+  -   `match` := {`var` `value`, ...}
+  -   `var` is a variable bound to either :s :p  or :o in `context`
+  -   `value` is a value associated with `var` in `g`
+  -   `g` is a Graph
+  -   `next-p` is either a graph element or a traversal function
+  -   `context` is a graph representing the match context for some query clause
+      := {:s `fixed-desc` or `elt-desc`
+          :p `open-desc` or `elt-desc`
+          :o `open-desc` or `elt-desc`
+         }
+  -   `fixed-desc` := {:bound-to #{`var`}
+                     :value #{`value`}
+                    }
+       ... assigns one of the matching values encountered in the course
+       of matching.
+  -  `elt-desc` := {:value #{`value`}
+                   :candidate #{`value`}
                   }
-     ... assigns one of the matching values encountered in the course
-     of matching.
-   <elt-desc> := {:value #{<value>}
-                 :candidate #{<value>}
-                }
-    ... already matched to a fixed value specified in the clause itself
-
-  <open-desc> := {:bound-to <var>
-                  :candidate #{<value>, ...}
-     ... waiting to be matched to values downstream
-  <var> is a variable
-  <value> is a graph element, a singleton subset of #{<candidate>, ...}
-    if candidates are specified.
-  <candidate> may be specified at the start of the clause matching based
-    on the upstream query context.
-
+      ... already matched to a fixed value specified in the clause itself
+  -   `open-desc` := {:bound-to `var`
+                      :candidate #{`value`, ...}
+       ... waiting to be matched to values downstream
+  -   `var` is a variable
+  -   `value` is a graph element, a singleton subset of #{`candidate`, ...}
+      if candidates are specified.
+  - `candidate` may be specified at the start of the clause matching based
+      on the upstream query context.
   "
   [^Graph g ^Graph context matches next-p]
   {:pre [(set? matches)
          ]
    }
   (let [o-candidates (context :o :candidate)
-        ;; ... bound to the <o> in previous clauses, or nil
+        ;; ... bound to the <o` in previous clauses, or nil
         qualify-os (fn [os]
-                     ;; returns #{<o>} s.t. <o> is consistent with o's
+                     ;; returns #{<o`} s.t. <o` is consistent with o's
                      ;; acquired in clauses upstream
                      (if o-candidates
                        (set/intersection o-candidates os)
@@ -458,42 +453,42 @@ Where
       (reduce (partial -collect-o-match
                        ;; update p-specifications of context
                        (if (context :p :bound-to)
-                         ;; <p> is a variable, specify this graph element
+                         ;; <p` is a variable, specify this graph element
                          (do
                            (assert (not (context :p :value)))
                            (add context 
                                 [[:p :value next-p]]))
                          (do
-                           ;; <p> is  a graph element
+                           ;; <p` is  a graph element
                            (assert (context :p :value))
                            context)))
               matches
-              ;; match the objects for <s> and <next-p>
+              ;; match the objects for <s` and <next-p`
               (qualify-os (g (unique (context :s :value)) next-p))))))
                 
 
 (defn- -collect-s-p-o-matches
-  "Returns <matches> for `next-s` in `g`, given `context`
+  "Returns `matches` for `next-s` in `g`, given `context`
   Where
-  <matches> := [<match> ...]
-  <next-s> is a subject matching the current clause in some query.
-  <match> := #{:<var> <value>,...}
-  <g> is a Graph
-    <context> is a graph representing the match context for some query clause
-    := {:s <open-desc> or <elt-desc>
-        :p <open-desc> or <elt-desc>
-        :o <open-desc> or <elt-desc>
-       }
-  <open-desc> := {:bound-to #{<var>} 
-                 :candidate #{<candidate>, ...} or nil if anything matches
-    ... waiting to be matched to values downstream
-  <elt-desc> := {:value #{<value>}
-                 :candidate #{<value>}
-                }
-    ... already matched to a fixed value specified in the clause itself
-  <var> is a :?variable
-  <candidate> may be specified at the start of the clause matching based
-    on whether <var> was bound upstream in the query context
+  -   `matches` := [`match` ...]
+  -   `next-s` is a subject matching the current clause in some query.
+  -   `match` := #{:`var` `value`,...}
+  -   `g` is a Graph
+  -     `context` is a graph representing the match context for some query clause
+      := {:s `open-desc` or `elt-desc`
+          :p `open-desc` or `elt-desc`
+          :o `open-desc` or `elt-desc`
+         }
+  -   `open-desc` := {:bound-to #{`var`} 
+                      :candidate #{`candidate`, ...} or nil if anything matches
+      ... waiting to be matched to values downstream
+  -   `elt-desc` := {:value #{`value`}
+                     :candidate #{`value`}
+                  }
+      ... already matched to a fixed value specified in the clause itself
+  -   `var` is a :?variable
+  -   `candidate` may be specified at the start of the clause matching based
+        on whether `var` was bound upstream in the query context
   "
   [^Graph g ^Graph context matches next-s]  
   {:pre [(set? matches)]
@@ -524,21 +519,21 @@ Where
 
 
 (defn- -query-clause-matches
-  "Returns <matches> for `clause` posed against `g` in `query-context`
+  "Returns `matches` for `clause` posed against `g` in `query-context`
   Where
-  <matches> := [<match> ...]
-  <clause> :=[<s-spec> <p-spec> <o-spec>], a line from a simple query
-  <g> is an instance of Graph.
-  <query-context> := {:query-var? ..., ...}
-  <match> := { <var> <value>, ...}
-  <s-spec> and <o-spec> are either variables or graph elements to match in
-    the graph pattern
-  <p-spec> is either a variable, a graph element to match in the graph, or a
-    traversal function := (fn [g acc queue]...) -> [acc' queue'] s.t.
-    (traverse g p #{} s) -> #{<o> ....}
-  <var> names the subset of <s> <p> <o> for which (query-var? %) is true
-  <value> is an element in <g> which matches some <var> in <clause>
-  <query-var?> := (fn [var]...)  -> true iff <var> is a variable.
+  -   `matches` := [`match` ...]
+  -   `clause` :=[`s-spec` `p-spec` `o-spec`], a line from a simple query
+  -   `g` is an instance of Graph.
+  -   `query-context` := {:query-var? ..., ...}
+  -   `match` := { `var` `value`, ...}
+  -   `s-spec` and `o-spec` are either variables or graph elements to match in
+      the graph pattern
+  -   `p-spec` is either a variable, a graph element to match in the graph, or a
+      traversal function := (fn [g acc queue]...) -> [acc' queue'] s.t.
+      (traverse g p #{} s) -> #{`o` ....}
+  -   `var` names the subset of `s` `p` `o` for which (query-var? %) is true
+  -   `value` is an element in `g` which matches some `var` in `clause`
+  -   `query-var?` := (fn [var]...)  -> true iff `var` is a variable.
   "
   [^Graph g ^Graph query-context clause]
   {:pre [(map? query-context)
@@ -624,29 +619,29 @@ Where
               [s-spec]))))
 
 (defn- -collect-clause-match
-  "Returns [<match>...] for `context` and `match`
+  "Returns [`match`...] for `context` and `match`
   Where
-  <clause-state> := {:bindings <bindings> :shared-bound <shared-bound>}
-    s.t. <bindings> membership is appropriately modified per <match>
-    meaning that that members of <bindings> inconsistent with <match>
-    have been removed, along with their corresponding entries in
-    <specified>
-  <match> := {<var> <value>, ...}  
-  <query-state> := {:bindings <bindings>
-                    :specified <specified>
-                    ...
-                    },
-    modified s.t. each <match> found for <clause> is joined with compatible
+  -   `clause-state` := {:bindings `bindings` :shared-bound `shared-bound`}
+        s.t. `bindings` membership is appropriately modified per `match`
+        meaning that that members of `bindings` inconsistent with `match`
+        have been removed, along with their corresponding entries in
+        `specified`
+  -   `match` := {`var` `value`, ...}  
+  -   `query-state` := {:bindings `bindings`
+                        :specified `specified`
+                        ...
+                        },
+    modified s.t. each `match` found for `clause` is joined with compatible
     existing matches.
-  <bindings> := #{<binding>...} typically to some query clause
-  <binding> is a valid <match> integrating compatible matches from all previous
-    clauses
-  <shared-bound> := #{<var> ...}, s.t. <var> is bound in <specified>, and
-    also present in the current graph pattern clause. This means new bindings
-    must be unified with matches already specified upstream.
-  <specified> := {<var> {<value> <specified bindings> ...}...}, a Graph
-  <specified bindings> := #{<specified match>...} a subset of <matches> for which
-    <var> was bound to <value> in previous clauses.
+  -   `bindings` := #{`binding`...} typically to some query clause
+  -   `binding` is a valid `match` integrating compatible matches from all previous
+        clauses
+  -   `shared-bound` := #{`var` ...}, s.t. `var` is bound in `specified`, and
+        also present in the current graph pattern clause. This means new bindings
+        must be unified with matches already specified upstream.
+  -   `specified` := {`var` {`value` `specified bindings` ...}...}, a Graph
+  -   `specified bindings` := #{`specified match`...} a subset of `matches` for which
+  -   `var` was bound to `value` in previous clauses.
   "
   [query-state clause-state match]
   {:pre [(map? query-state)
@@ -676,12 +671,12 @@ Where
 
 
 (defn- -triplify-binding 
-  "Returns [[<var> <value> <binding>]...] for `binding`, given `query-var?`
+  "Returns [[`var` `value` `binding`]...] for `binding`, given `query-var?`
 Where
-  <binding> := {<var> <value> ...}
-  <query-var?> := (fn [var] ...) -> true iff <var> is a variable.
-  <var> is a query-var
-  <value> is typically a value bound to <var> in some query match
+  -   `binding` := {`var` `value` ...}
+  -   `query-var?` := (fn [var] ...) -> true iff `var` is a variable.
+  -   `var` is a query-var
+  -   `value` is typically a value bound to `var` in some query match
   NOTE: this is typically used to populate the 'specified' graph in 
   a query-state, which informs the matching process downstream.
   "
@@ -696,21 +691,21 @@ Where
 
 ;; ^reduce-fn
 (defn- -collect-clause-matches
-  "Returns <query-state> modified for matches to <clause> in <g>
+  "Returns `query-state` modified for matches to `clause` in `g`
   Where
-  <query-state> := {:viable? ... :matches ... :specified ...}
-    modified s.t. each match found for clause is joined with compatible
-    existing matches.
-  <clause> is a triple of query specs, typically part of some query
-  <g> is a Graph
-  <viable?> is true if no upstream clauses have failed. Matching ceases
-    in the event that the query is no longer viable.
-  <matches> := #{<match>...} which match this and upstream <clause> in <g>
-  <match> a valid match integrating compatible matches from this and all previous
-    clauses
-  <specified> := {<var> {<value> <specified matches> ...}...}, a Graph
-  <specified matches> := #{<specified match>...} a subset of <matches> containing
-    a binding for <var> and <value>
+  -   `query-state` := {:viable? ... :matches ... :specified ...}
+         modified s.t. each match found for clause is joined with compatible
+         existing matches.
+  -   `clause` is a triple of query specs, typically part of some query
+  -   `g` is a Graph
+  -   `viable?` is true if no upstream clauses have failed. Matching ceases
+         in the event that the query is no longer viable.
+  -   `matches` := #{`match`...} which match this and upstream `clause` in `g`
+  -   `match` a valid match integrating compatible matches from this and all previous
+        clauses
+  -   `specified` := {`var` {`value` `specified matches` ...}...}, a Graph
+        `specified matches` := #{`specified match`...} a subset of `matches` containing
+        a binding for `var` and `value`
   "
   [^Graph g query-state next-clause]
   {:pre [(map? query-state)
@@ -757,15 +752,15 @@ Where
                  ))))))
 
 (defn query-graph
-  "Returns #{<binding>...} for <graph-pattern> applied to <g>
+  "Returns #{`binding`...} for `graph-pattern` applied to `g`
   Where
-  <g> is a Graph
-  <graph-pattern> := [[<var-or-value> <var-or-value> <var-or-value>]...]
-  <var-or-value> is in #{<var> <value>}
-  <var> is a keyword whose name begins with '?'
-  <value> is a value which must match an element of <g> exactly.
-  <binding> := {<var> <matching-value>, ...}
-  <matching-value> matches <var> within <graph-pattern> applied to <g>
+  -   `g` is a Graph
+  -   `graph-pattern` := [[`var-or-value` `var-or-value` `var-or-value`]...]
+  -   `var-or-value` is in #{`var` `value`}
+  -   `var` is a keyword whose name begins with '?'
+  -   `value` is a value which must match an element of `g` exactly.
+  -   `binding` := {`var` `matching-value`, ...}
+  -   `matching-value` matches `var` within `graph-pattern` applied to `g`
   "
   ([^Graph g graph-pattern query-var?]
   {:pre [(vector? graph-pattern)
