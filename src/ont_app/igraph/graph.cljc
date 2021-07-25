@@ -8,6 +8,7 @@ With variables of the form :?x.
 
 The core type declaration:
 
+```
 (deftype Graph [schema contents]
   
   IGraph
@@ -31,7 +32,7 @@ The core type declaration:
   (intersection [g1 g2] (get-intersection g1 g2))
   (difference [g1 g2] (remove-from-graph g1 (g2)))
   )
-
+```
 "}
     ont-app.igraph.graph
   (:require [clojure.set :as set]

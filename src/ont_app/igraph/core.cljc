@@ -28,7 +28,7 @@ other basic clojure data structures such as maps, vectors and sets.
 Where
   - `path` is the output of `path-fn`
   - `g` implements IGraph
-  - `path-fn` a function [g] -` `path`.
+  - `path-fn` a function [g] -> `path`.
 NOTE: Anything that would choke the reader on slurp should be removed 
   from `g` before saving.
 "
