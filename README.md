@@ -85,7 +85,7 @@ This is deployed to [clojars](https://clojars.org/ont-app/igraph):
 Project](https://img.shields.io/clojars/v/ont-app/igraph.svg)](https://clojars.org/ont-app/igraph)
 
 ```
-[ont-app/igraph "0.1.6"]
+[ont-app/igraph "0.1.7"]
 ```
 
 Require thus:
