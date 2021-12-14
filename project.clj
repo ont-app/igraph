@@ -4,12 +4,8 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.3"]
-                 [org.clojure/clojurescript "1.10.879"
-                  :exclusions [com.google.errorprone/error_prone_annotations
-                               com.google.code.findbugs/jsr305
-                               ]] 
-                 [org.clojure/spec.alpha "0.2.194"]
-                 [lein-doo "0.1.11"]
+                 [org.clojure/clojurescript "1.10.896"]
+                 [org.clojure/spec.alpha "0.3.218"]
                  ]
   
   ;; :main ^:skip-aot ont-app.igraph.core
@@ -54,7 +50,8 @@
   :codox {:output-path "doc"}
 
   :profiles {:uberjar {}
-             :dev {:dependencies [[binaryage/devtools "1.0.3"]
+             :dev {:dependencies [[binaryage/devtools "1.0.4"]
+                                  [lein-doo "0.1.11"]
                                   ]
                    :source-paths ["src"] 
                    :clean-targets
