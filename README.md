@@ -69,6 +69,7 @@ There is a [15-minute video introduction here](https://www.youtube.com/watch?v=B
     - [Graph creation](#h4-graph-creation)
     - [Querying](#h4-querying)
   - [sparql-client](#h3-sparql-client)
+  - [igraph-jena](#h3-igraph-jena)
   - [datascript-graph](#h3-datascript-graph)
   - [datomic-client](#h3-datomic-client)
 - [Acknowledgements](#h2-acknowledgements)
@@ -1278,6 +1279,20 @@ language is [SPARQL](https://www.wikidata.org/wiki/Q54871).
 Keyword identifiers are expected to be namespaced, and rely on the [ont-app/vocabulary](https://github.com/ont-app/vocabulary) library, which uses namespace metadata to intercede between Clojure namespaces and RDF namespaces.
 
 Set operations are not supported.
+
+
+<a name="h3-igraph-jena"></a>
+### igraph-jena
+
+<https://github.com/ont-app/igraph-jena>
+
+Implements a mutable IGraph for [Apache Jena](https://jena.apache.org/). 
+
+Keyword identifiers are expected to be namespaced, and rely on the [ont-app/vocabulary](https://github.com/ont-app/vocabulary) library, which uses namespace metadata to intercede between Clojure namespaces and RDF namespaces.
+
+Set operations are supported.
+
+Currently supports version 3.
 
 <a name="h3-datascript-graph"></a>
 ### datascript-graph
