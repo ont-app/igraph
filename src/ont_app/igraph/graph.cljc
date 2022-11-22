@@ -84,10 +84,10 @@ The core type declaration:
   
   #?(:clj clojure.lang.IFn
      :cljs cljs.core/IFn)
-  (invoke [g] (normal-form g))
-  (invoke [g s] (get-p-o g s))
-  (invoke [g s p] (match-or-traverse g s p))
-  (invoke [g s p o] (match-or-traverse g s p o))
+  (#?(:clj invoke :cljs -invoke) [g] (normal-form g))
+  (#?(:clj invoke :cljs -invoke) [g s] (get-p-o g s))
+  (#?(:clj invoke :cljs -invoke) [g s p] (match-or-traverse g s p))
+  (#?(:clj invoke :cljs -invoke) [g s p o] (match-or-traverse g s p o))
 
   igraph/IGraphImmutable
   (add [g to-add] (add-to-graph g to-add))
