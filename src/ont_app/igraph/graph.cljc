@@ -99,17 +99,13 @@ The core type declaration:
   (difference [g1 g2] (remove-from-graph g1 (g2)))
   )
 
-#_(defn make-error [msg]
-  #?(:clj (Exception. msg)
-     :cljs (js/Error msg)))
-
 (defn get-contents 
   "Returns (.contents g) or (.-contents g) appropriate to clj/cljs"
-  [g]
+  [^Graph g]
   #?(:clj
      (.contents g)
      :cljs
-     (.-contents g)))
+     ^PersistentArrayMap (.-contents g)))
 
 (def cljc-lazy-seq  #?(:clj clojure.lang.LazySeq
                        :cljs cljs.core/LazySeq
