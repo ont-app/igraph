@@ -1,4 +1,8 @@
-
+*#
+*.class
+*.jar
+*~
+.nrepl-port
 /checkouts
 /classes
 /dev
@@ -8,10 +12,5 @@
 /target
 pom.xml
 pom.xml.asc
-*.jar
-*.class
-/.lein-*
-/.nrepl-port
-.*
-*~
-*#
+
+
