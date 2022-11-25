@@ -43,23 +43,15 @@ The core type declaration:
              [
               add
               add-to-graph
-              ask
-              difference
               get-o
               get-p-o
-              intersection
-              invoke
               match-or-traverse
-              mutability
               normal-form
-              query
               reduce-spo
               remove-from-graph
               subjects
-              subtract
               traverse
               triples-format
-              union
               unique
               ]
              ]
@@ -80,7 +72,7 @@ The core type declaration:
   (get-o [g s p] (get-in (get-contents g) [s p]))
   (ask [g s p o] (get-in (get-contents g) [s p o]))
   (query [g q] (query-graph g q))
-  (mutability [g] ::igraph/immutable)
+  (mutability [_g_] ::igraph/immutable)
   
   #?(:clj clojure.lang.IFn
      :cljs cljs.core/IFn)
@@ -201,7 +193,7 @@ Note: typically used to inform removal of nodes in a graph, where `key` is
   [map-or-set path]
   (let [key (first path)
         ]
-    (assert (not (empty? path)))
+    (assert (seq path))
     (if (= (count path) 1)
       (if (set? map-or-set)
         (disj map-or-set key)
@@ -267,11 +259,10 @@ Where
         collect-vector (fn [acc v]
                          (if (< (count v) 3) ;; specifies s or s-p
                            (-dissoc-in acc v)
-                         ;; else this specifies one or more triples...
-                         (let []
+                           ;; else this specifies one or more triples...
                            (reduce (partial remove-triple (first v))
                                    acc
-                                   (partition 2 (rest v))))))
+                                   (partition 2 (rest v)))))
         ]
     (if (empty? triples)
       g
@@ -285,12 +276,9 @@ Where
   ;; `to-remove` may be [s] [s p] [s p o]
   (if (empty? to-remove)
     g
-    (do
-      (let [contents (-dissoc-in (get-contents g) to-remove)
-            ]
-        (make-graph
-         :contents (-dissoc-in (get-contents g)
-                               to-remove))))))
+    (make-graph
+     :contents (-dissoc-in (get-contents g)
+                               to-remove))))
 
 
 (defmethod remove-from-graph [Graph :underspecified-triple]
@@ -555,7 +543,7 @@ Where
                          ;; candidate bindings.
                          (let [candidates
                                (candidates-for q-var)]
-                           (if (and candidates (not (empty? candidates)))
+                           (if (and candidates (seq candidates))
                              (add c {spo {:candidate candidates}})
                              c)))
 
@@ -650,7 +638,7 @@ Where
          :bindings
          (set/union
           (or (:bindings clause-state) #{})
-          (if (not (empty? (:shared-bound clause-state)))
+          (if (seq (:shared-bound clause-state))
             (set (map (partial merge match)
                       (reduce set/intersection
                               (map (fn [qvar]
@@ -728,25 +716,23 @@ Where
                               #{})
                           (set (filter query-var? next-clause)))
            }
-          
+          clause-state 
+          (reduce (partial -collect-clause-match query-state)
+                  initial-clause-state
+                  (-query-clause-matches g query-state next-clause))
           ]
-      (let [clause-state 
-            (reduce (partial -collect-clause-match query-state)
-                    initial-clause-state
-                    (-query-clause-matches g query-state next-clause))
-            ]
-        (if-let [bindings (:bindings clause-state)]
-          (assoc query-state
-                 :bindings bindings
-                 :specified (add (make-graph)
-                                 (into []
-                                       (mapcat (partial -triplify-binding
-                                                        query-var?)
-                                               (:bindings clause-state)))))
-          (assoc query-state
-                 :viable? false
-                 :bindings nil
-                 ))))))
+      (if-let [bindings (:bindings clause-state)]
+        (assoc query-state
+               :bindings bindings
+               :specified (add (make-graph)
+                               (into []
+                                     (mapcat (partial -triplify-binding
+                                                      query-var?)
+                                             (:bindings clause-state)))))
+        (assoc query-state
+               :viable? false
+               :bindings nil
+               )))))
 
 (defn query-graph
   "Returns #{`binding`...} for `graph-pattern` applied to `g`
