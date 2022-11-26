@@ -9,7 +9,7 @@ With variables of the form :?x.
 The core type declaration:
 
 ```
-(deftype Graph [schema contents]
+(deftype Graph [contents]
   
   IGraph
   (normal-form [g] (.contents g))
@@ -99,9 +99,11 @@ The core type declaration:
      :cljs
      ^PersistentArrayMap (.-contents g)))
 
-(def cljc-lazy-seq  #?(:clj clojure.lang.LazySeq
-                       :cljs cljs.core/LazySeq
-                       ))
+(def cljc-lazy-seq
+  "Platform-agnostic LazySeq."
+  #?(:clj clojure.lang.LazySeq
+     :cljs cljs.core/LazySeq
+     ))
 
 ;; NO READER MACROS BELOW THIS POINT
   

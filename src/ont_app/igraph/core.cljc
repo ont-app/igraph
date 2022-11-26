@@ -108,12 +108,8 @@ Where
 - `binding` := {`var` `value`, ...}
 - `q` is a query specification suitable for the native format of `g`
 - `g` is a graph
-- `args` := [`arg`....]
 - `var` is a variable specified in `q`
 - `value` is a value found in `g` bounded to `var` per `q`
-- `arg` is any optional value that informs native execution of the query.
-   for example if the native platform supports a templating scheme as in
-   datalog
 "
     )
   ;; for IFn
@@ -509,6 +505,8 @@ Where
                                   :update-global-context `global-fn` ( default nil)
                                }
                 }
+                Or Alternatively, [`traversal-fn-or-property-name`, ...] for the short
+                   form.
   - `spec-element` is typically a keyword naming a stage in the traversal, though
     it can also be a direct reference to a traversal function, in which case
     it will be equivalent to {:fn `spec-element`}
@@ -618,7 +616,7 @@ Informs p-dispatcher
     :match))
 
 (defn p-dispatcher
-  "Returns :traverse or :match, as a basis for dispatching standard `invoke` methods involving a `p` argument, which may be either a value ot match or a traversal function.
+  "Returns :traverse or :match, as a basis for dispatching standard `invoke` methods involving a `p` argument, which may be either a value to match or a traversal function.
   "
   ([_g_ _s_ p]
    (match-or-traverse-tag p))

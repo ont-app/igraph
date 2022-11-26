@@ -3,27 +3,24 @@
 outdated:
 	clojure -M:outdated
 
-upgrade:
-	clojure -M:neil deps upgrade
-
 ## Testing ....
-.PHONY: jvm-test
-jvm-test:
+.PHONY: test-jvm
+test-jvm:
 	clojure -T:build test
 
-.PHONY: cljs-test
-cljs-test:
+.PHONY: test-js
+test-js:
 	clojure -M:test-cljs
 
-.PHONY: node-test
-node-test:
+.PHONY: test-node
+test-node:
 	shadow-cljs compile node-test
 
 .PHONY: clean-all
 clean-all:
 	clojure -T:build clean :include-caches? true
 
-test-all: clean-all jvm-test cljs-test node-test
+test-all: clean-all test-jvm test-js test-node
 
 ## Style ....
 kondo:

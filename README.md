@@ -74,6 +74,7 @@ There is a [15-minute video introduction here](https://www.youtube.com/watch?v=B
   - [datomic-client](#h3-datomic-client)
 - [Acknowledgements](#h2-acknowledgements)
 - [Future Work](#h2-future-work)
+- [Developer Notes](#developer-notes)
 - [License](#h2-license)
 ---
 
@@ -120,7 +121,7 @@ primitive with one higher level of expressiveness:
 This is informed to a large degree by the
 [RDF](https://www.wikidata.org/wiki/Q54872) model, and aims to align
 with [linked data](https://www.wikidata.org/wiki/Q515701) encoded in
-RDF, while keeping direct dependencies to a minimum.
+RDF, while keeping direct dependencies to the RDF stack to a minimum.
 
 <a name="h2-igraph-protocol"></a>
 ## The IGraph protocol
@@ -227,8 +228,8 @@ for any method that warrants it:
 <a name="subjects_method"></a>
 #### `subjects`
 
-The `subjects` method must return a lazy sequence of complete set of
-subjects in the graph (modulo tractability):
+The `subjects` method must return a lazy sequence of the complete set
+of subjects in the graph (modulo tractability):
 
 ```
 > (igraph/subjects eg)
@@ -373,7 +374,7 @@ permissions) might best be treated as mutable graphs.
 
 Naturally, other things being equal, the preferred solution is to use
 immutable graphs when it is possible to do so. The examples in this
-README will all be applied to immutable graphs.
+README will mostly be applied to immutable graphs unless stated otherwise.
 
 <a name="mutability_method"></a>
 #### `mutability`
@@ -658,6 +659,7 @@ nessesarily a bit more involved.
 
 - `(traverse g traversal context acc queue)` -> `acc'`
 - `(traverse g traversal acc queue)` -> `acc'` ;; default context = {}
+- `(traverse g traversal queue)` -> `acc'` ;; default context = {}, default acc = []
 
     ... traversing `g` per the `traversal` function, starting with the
     first element of `queue`, possibly informed by `context`.
@@ -749,13 +751,14 @@ cycles, and will be explained in detail [below](#h4-context). More
 sophisticated traversal functions may use the context as a kind of
 blackboard.
 
-The third argument (and second element returned) is the value to be
-accumulated, identical to its counterpart in the _reduce_ idiom.
+The third argument (and precursor to the second element returned) is
+the value to be accumulated, identical to its counterpart in the
+_reduce_ idiom.
 
-The fourth argument (and third element returned) is the traversal
-queue. It must be sequential, and may be ordered in any way that makes
-sense. An empty queue signals and end of the traversal, at which point
-`traverse` will return the value of the accumulator.
+The fourth argument (and precursor to the third element returned) is
+the traversal queue. It must be sequential, and may be ordered in any
+way that makes sense. An empty queue signals and end of the traversal,
+at which point `traverse` will return the value of the accumulator.
 
 Here's a possible definition of subClassOf*:
 
@@ -792,7 +795,7 @@ context:
 - `:seek` (optional), a function `(fn [context acc]...)` -> `acc'`. If
   specified, this function will be called at the beginning of each
   traversal, and if truthy and non-empty, the traversal will end
-  immediately with that value.
+  immediately with the value of `acc`.
 
 In addition, the traversal function may use the context as a
 blackboard to communicate between iterations of the traversal. For
@@ -977,7 +980,7 @@ element in 'p' position in _g_.
   (default [])
 - :local-context-fn (optional) - a function [global-context] -> `local
   context` producing the context for this stage of the traversal.
-- :update-local-context (optional) - a function [global-context
+- :update-global-context (optional) - a function [global-context
   local-context] -> `global-context'`, capturing whatever aspects of
   the current stage of traversal may be of interest to subsequent
   stages.
@@ -1031,7 +1034,7 @@ So given the traversal functions in the examples above:
 :food
 >
 > (eg-with-types :john (igraph/t-comp [:likes subClassOf*]))
-#{:consumable :beef :meat :food :thing}
+#{:consumable :beef :meat :food :thing} ;; classes of stuff John likes
 >
 ```
 
@@ -1056,7 +1059,7 @@ The following utilities are provided to help with this:
   exists.
 - `(normalize-flat-description m)` is the inverse of
   `flatten-description`.
-- `(assert-unique g s p o) - replaces one singleton object with
+- `(assert-unique g s p o)` - replaces one singleton object with
   another.
 
 <a name="h3-unique"></a>
@@ -1184,7 +1187,7 @@ acc'`. Cf. [reduce-kv](https://clojuredocs.org/clojure.core/reduce-kv).
 
 The `ont-app.igraph.graph` module makes one implementation of IGraph
 available without any additional dependencies, and so far there are
-three other libraries in the ont-app project which implement this
+four other libraries in the ont-app project which implement this
 protocol.
 
 Other implementations are planned, and I'd be interested to learn of
@@ -1197,9 +1200,9 @@ The IGraph library comes with `ont-app.igraph.graph`, whose `Graph`
 deftype is a very lightweight implementation of IGraph.
 
 Its native representation is just Normal Form. Any hashable object can
-technically be provided for any _s_, _p_, or _o_, but best practice is
-to keep non-identifiers a the "o" level if you want to play easily
-with other IGraph implementations.
+technically be provided for any _s_, _p_, or _o_, but be advised that
+other IGraph implementations often expect to keep non-identifiers a
+the "o" level.
 
 ```
 (require '[ont-app.igraph.graph :as g])
@@ -1292,7 +1295,7 @@ Keyword identifiers are expected to be namespaced, and rely on the [ont-app/voca
 
 Set operations are supported.
 
-Currently supports version 3.
+Currently supports Jena version 4.
 
 <a name="h3-datascript-graph"></a>
 ### datascript-graph
@@ -1311,6 +1314,46 @@ operations.
 https://github.com/ont-app/datomic-client
 
 This implements IGraph for the [Datomic Client API](https://docs.datomic.com/cloud/client/client-api.html). The query language is datalog. Mutability model is Accumulate Only. Set operations are not supported.
+
+## Developer notes
+
+The Makefile has targets for most of the usual stuff.
+
+It presumes that your `~/.clojure/deps.edn` has aliases as follows:
+
+```
+{
+ :aliases {
+           ;; Borkdude's Kondo linter
+           ;; typical usage:
+           ;; clojure -M:kondo --lint src
+           ;; For help: clojure -M:kondo  --help
+           :kondo
+           {:extra-deps {clj-kondo/clj-kondo {:mvn/version "RELEASE"}}
+            :main-opts  ["-m" "clj-kondo.main"]
+            }
+           ;; Document generator
+           ;; Call with clojure -X:codox
+           :codox
+           {
+            :extra-deps {codox/codox {:mvn/version "0.10.8"}}
+            :exec-fn codox.main/generate-docs
+            :exec-args {:output-path "doc"}
+            }
+           ;; outdated
+           ;; c.f. Lein ancient
+           ;; clojure -M:outdated --help for help
+           ;; Typical usage: clojure -M:outdated
+           :outdated
+           {
+            ;; Note that it is `:deps`, not `:extra-deps`
+            :deps {com.github.liquidz/antq {:mvn/version "RELEASE"}}
+            :main-opts ["-m" "antq.core"]
+            }
+           } ;; /end aliases
+
+}
+```
 
 <a name="h2-future-work"></a>
 ## Future work
@@ -1332,7 +1375,7 @@ feedback and advice.
 ## License
 
 
-Copyright © 2019-21 Eric D. Scott
+Copyright © 2019-22 Eric D. Scott
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
