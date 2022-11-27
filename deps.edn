@@ -2,7 +2,10 @@
  :paths ["src" "resources"]
  :deps {
         org.clojure/clojure {:mvn/version "1.11.1"}
-        org.clojure/clojurescript {:mvn/version "1.11.60"}
+        org.clojure/clojurescript {:mvn/version "1.11.60"
+                                   :exclusions [org.msgpack/msgpack]
+                                   ;; ... per nvd warning CVE-2022-41719
+                                   }
         }
  :aliases {
            ;;;;;;;;;;;;;;;;

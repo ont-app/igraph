@@ -1,7 +1,26 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## [0.2.0] - 2022-11-28
+### Added
+- Clojure CLI configuration
+### Removed
+- Leiningen configuration
+
+## [0.1.8] - 2021-12-15
+### Added
+- Reformed dependencies
+
+## [0.1.7] - 2021-08-20
+### Added
+- Revision to function signature for igraph/traverse (optional acc arg)
+
+## [0.1.6] - 2021-07-25
+### Added
+- Cleanup
+- Updated documentation
 ## [0.1.5] - 2020-06-3
+
 ### Added
 - Source now includes test module to be leveraged by downstream
   implementation tests.
