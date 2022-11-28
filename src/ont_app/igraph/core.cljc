@@ -108,12 +108,8 @@ Where
 - `binding` := {`var` `value`, ...}
 - `q` is a query specification suitable for the native format of `g`
 - `g` is a graph
-- `args` := [`arg`....]
 - `var` is a variable specified in `q`
 - `value` is a value found in `g` bounded to `var` per `q`
-- `arg` is any optional value that informs native execution of the query.
-   for example if the native platform supports a templating scheme as in
-   datalog
 "
     )
   ;; for IFn
@@ -251,7 +247,7 @@ NOTE: see Datomic documentation for details
           (throw (ex-info "Invalid triples format"
                           (spec/explain-data ::triples-format triples-spec)))
           ;; else we're good
-          (let [[format value] conform]
+          (let [[format _value_] conform]
             format)))))
 
 (spec/fdef triples-format
@@ -378,7 +374,7 @@ NOTE: see Datomic documentation for details
                         (assert (= (type result) (type acc)))
                         result)
          ]
-     (if (and seek (not (empty? seek)))
+     (if (and seek (seq seek))
        (check-result seek)
        ;; else no seek
        (if (or (nil? queue)
@@ -509,6 +505,8 @@ Where
                                   :update-global-context `global-fn` ( default nil)
                                }
                 }
+                Or Alternatively, [`traversal-fn-or-property-name`, ...] for the short
+                   form.
   - `spec-element` is typically a keyword naming a stage in the traversal, though
     it can also be a direct reference to a traversal function, in which case
     it will be equivalent to {:fn `spec-element`}
@@ -592,7 +590,7 @@ An inferred 'uncle' relation.
                     {})
                 f (cond
                     (fn? p) p
-                    :default
+                    :else
                     (or (:fn p-spec)
                         (traverse-link p)
                         ))
@@ -618,11 +616,11 @@ Informs p-dispatcher
     :match))
 
 (defn p-dispatcher
-  "Returns :traverse or :match, as a basis for dispatching standard `invoke` methods involving a `p` argument, which may be either a value ot match or a traversal function.
+  "Returns :traverse or :match, as a basis for dispatching standard `invoke` methods involving a `p` argument, which may be either a value to match or a traversal function.
   "
-  ([g s p]
+  ([_g_ _s_ p]
    (match-or-traverse-tag p))
-  ([g s p o]
+  ([_g_ _s_ p _o_]
    (match-or-traverse-tag p)))
 
 (defmulti match-or-traverse
@@ -651,7 +649,7 @@ Informs p-dispatcher
     :pre [(fn? p)]
     }
    (declare unique)
-   (let [seek-o (fn seek-o [context acc]
+   (let [seek-o (fn seek-o [_context_ acc]
                   (clojure.set/intersection acc #{o}))
          ]
          (unique (traverse g p {:seek seek-o} #{} [s])))))
@@ -679,19 +677,18 @@ Informs p-dispatcher
     only one object.
   "
   ([coll on-ambiguity]
-   (if (not (empty? coll))
+   (if (seq coll)
      (if (> (count coll) 1)
        (on-ambiguity coll)
        (first coll))))
   ([coll]
    (unique coll (fn [coll]
-                  (let [error-msg (str "Non-unique: " coll)]
-                    (throw (ex-info "Unique called on non-unique collection"
-                                    {:type ::NonUnique
-                                     :coll coll
-                                     })))))))
+                  (throw (ex-info "Unique called on non-unique collection"
+                                  {:type ::NonUnique
+                                   :coll coll
+                                   }))))))
 
-^{:inverse-of normalize-flat-description}
+;; Inverse of normalize-flat-description
 (defn flatten-description 
   "Returns `p-o` description with singletons broken out into scalars
 Where

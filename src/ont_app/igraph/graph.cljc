@@ -9,7 +9,7 @@ With variables of the form :?x.
 The core type declaration:
 
 ```
-(deftype Graph [schema contents]
+(deftype Graph [contents]
   
   IGraph
   (normal-form [g] (.contents g))
@@ -43,23 +43,15 @@ The core type declaration:
              [
               add
               add-to-graph
-              ask
-              difference
               get-o
               get-p-o
-              intersection
-              invoke
               match-or-traverse
-              mutability
               normal-form
-              query
               reduce-spo
               remove-from-graph
               subjects
-              subtract
               traverse
               triples-format
-              union
               unique
               ]
              ]
@@ -80,14 +72,14 @@ The core type declaration:
   (get-o [g s p] (get-in (get-contents g) [s p]))
   (ask [g s p o] (get-in (get-contents g) [s p o]))
   (query [g q] (query-graph g q))
-  (mutability [g] ::igraph/immutable)
+  (mutability [_g_] ::igraph/immutable)
   
   #?(:clj clojure.lang.IFn
      :cljs cljs.core/IFn)
-  (invoke [g] (normal-form g))
-  (invoke [g s] (get-p-o g s))
-  (invoke [g s p] (match-or-traverse g s p))
-  (invoke [g s p o] (match-or-traverse g s p o))
+  (#?(:clj invoke :cljs -invoke) [g] (normal-form g))
+  (#?(:clj invoke :cljs -invoke) [g s] (get-p-o g s))
+  (#?(:clj invoke :cljs -invoke) [g s p] (match-or-traverse g s p))
+  (#?(:clj invoke :cljs -invoke) [g s p o] (match-or-traverse g s p o))
 
   igraph/IGraphImmutable
   (add [g to-add] (add-to-graph g to-add))
@@ -99,21 +91,19 @@ The core type declaration:
   (difference [g1 g2] (remove-from-graph g1 (g2)))
   )
 
-#_(defn make-error [msg]
-  #?(:clj (Exception. msg)
-     :cljs (js/Error msg)))
-
 (defn get-contents 
   "Returns (.contents g) or (.-contents g) appropriate to clj/cljs"
-  [g]
+  [^Graph g]
   #?(:clj
      (.contents g)
      :cljs
-     (.-contents g)))
+     ^PersistentArrayMap (.-contents g)))
 
-(def cljc-lazy-seq  #?(:clj clojure.lang.LazySeq
-                       :cljs cljs.core/LazySeq
-                       ))
+(def cljc-lazy-seq
+  "Platform-agnostic LazySeq."
+  #?(:clj clojure.lang.LazySeq
+     :cljs cljs.core/LazySeq
+     ))
 
 ;; NO READER MACROS BELOW THIS POINT
   
@@ -205,7 +195,7 @@ Note: typically used to inform removal of nodes in a graph, where `key` is
   [map-or-set path]
   (let [key (first path)
         ]
-    (assert (not (empty? path)))
+    (assert (seq path))
     (if (= (count path) 1)
       (if (set? map-or-set)
         (disj map-or-set key)
@@ -271,11 +261,10 @@ Where
         collect-vector (fn [acc v]
                          (if (< (count v) 3) ;; specifies s or s-p
                            (-dissoc-in acc v)
-                         ;; else this specifies one or more triples...
-                         (let []
+                           ;; else this specifies one or more triples...
                            (reduce (partial remove-triple (first v))
                                    acc
-                                   (partition 2 (rest v))))))
+                                   (partition 2 (rest v)))))
         ]
     (if (empty? triples)
       g
@@ -289,12 +278,9 @@ Where
   ;; `to-remove` may be [s] [s p] [s p o]
   (if (empty? to-remove)
     g
-    (do
-      (let [contents (-dissoc-in (get-contents g) to-remove)
-            ]
-        (make-graph
-         :contents (-dissoc-in (get-contents g)
-                               to-remove))))))
+    (make-graph
+     :contents (-dissoc-in (get-contents g)
+                               to-remove))))
 
 
 (defmethod remove-from-graph [Graph :underspecified-triple]
@@ -559,7 +545,7 @@ Where
                          ;; candidate bindings.
                          (let [candidates
                                (candidates-for q-var)]
-                           (if (and candidates (not (empty? candidates)))
+                           (if (and candidates (seq candidates))
                              (add c {spo {:candidate candidates}})
                              c)))
 
@@ -654,7 +640,7 @@ Where
          :bindings
          (set/union
           (or (:bindings clause-state) #{})
-          (if (not (empty? (:shared-bound clause-state)))
+          (if (seq (:shared-bound clause-state))
             (set (map (partial merge match)
                       (reduce set/intersection
                               (map (fn [qvar]
@@ -732,25 +718,23 @@ Where
                               #{})
                           (set (filter query-var? next-clause)))
            }
-          
+          clause-state 
+          (reduce (partial -collect-clause-match query-state)
+                  initial-clause-state
+                  (-query-clause-matches g query-state next-clause))
           ]
-      (let [clause-state 
-            (reduce (partial -collect-clause-match query-state)
-                    initial-clause-state
-                    (-query-clause-matches g query-state next-clause))
-            ]
-        (if-let [bindings (:bindings clause-state)]
-          (assoc query-state
-                 :bindings bindings
-                 :specified (add (make-graph)
-                                 (into []
-                                       (mapcat (partial -triplify-binding
-                                                        query-var?)
-                                               (:bindings clause-state)))))
-          (assoc query-state
-                 :viable? false
-                 :bindings nil
-                 ))))))
+      (if-let [bindings (:bindings clause-state)]
+        (assoc query-state
+               :bindings bindings
+               :specified (add (make-graph)
+                               (into []
+                                     (mapcat (partial -triplify-binding
+                                                      query-var?)
+                                             (:bindings clause-state)))))
+        (assoc query-state
+               :viable? false
+               :bindings nil
+               )))))
 
 (defn query-graph
   "Returns #{`binding`...} for `graph-pattern` applied to `g`
