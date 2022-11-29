@@ -72,9 +72,10 @@ There is a [15-minute video introduction here](https://www.youtube.com/watch?v=B
   - [igraph-jena](#h3-igraph-jena)
   - [datascript-graph](#h3-datascript-graph)
   - [datomic-client](#h3-datomic-client)
-- [Acknowledgements](#h2-acknowledgements)
-- [Future Work](#h2-future-work)
+- [Testing support](#testing-support)
 - [Developer Notes](#developer-notes)
+- [Future Work](#h2-future-work)
+- [Acknowledgements](#h2-acknowledgements)
 - [License](#h2-license)
 ---
 
@@ -1061,6 +1062,8 @@ The following utilities are provided to help with this:
   `flatten-description`.
 - `(assert-unique g s p o)` - replaces one singleton object with
   another.
+  - there are analogous functions `assert-unique!` and `claim-unique`
+    for Mutable and Accumlate-only protocols respectively
 
 <a name="h3-unique"></a>
 ### `unique`
@@ -1315,9 +1318,95 @@ https://github.com/ont-app/datomic-client
 
 This implements IGraph for the [Datomic Client API](https://docs.datomic.com/cloud/client/client-api.html). The query language is datalog. Mutability model is Accumulate Only. Set operations are not supported.
 
+### igraph-grafter
+
+https://github.com/ont-app/igraph-grafter
+
+A port of the IGraph protocols to
+[Grafter](https://github.com/Swirrl/grafter).
+
+## Testing support
+
+The `ont-app.igraph.test-support` module provides utilities to
+developers of downstream implementations to confirm compliance with
+the various protocols defined here.
+
+The `graph_test.cljc` file should serve as an example.
+
+It starts with an initialized instance of `ont_app.igraph.graph.Graph`
+intended to hold a report containing the results of a battery of
+tests. This report should be initialized with a triple to declare a
+function `[data] -> test-graph`, which should take various bodies of
+canonical test data and return an instance of the graph under
+examination....
+
+```clj
+(require [ont-app.igraph.test-support :as ts])
+
+(defn make-test-graph
+  "Creates an instance of the graph I want to test"
+  ^ont_app.igraph.graph.Graph [data]
+  (g/make-graph :contents data))
+
+(defn make-standard-report
+  "Creates a configured report graph."
+  []
+  (-> 
+   (g/make-graph)
+   (igraph/add [::ts/StandardIGraphImplementationReport
+                ::ts/makeGraphFn make-test-graph])))
+```
+
+Then we can apply a battery of standard tests, passing in the report
+and collecting test results.
+
+```clj
+(deftest standard-implementation-tests
+  "Standard tests against examples in the IGraph README for immutable set-enabled graphs"
+  (let [report (-> (make-standard-report)
+                   (ts/test-readme-eg-access)
+                   (ts/test-readme-eg-mutation)
+                   (ts/test-readme-eg-set-operations)
+                   (ts/test-readme-eg-traversal)
+                   (ts/test-cardinality-1)
+                   ;; Watch this space for bug-fix tests
+                   )
+     
+        ]
+    ;; You could also run (ts/run-standard-implementation-tests))
+    ;; `report` with be a graph of test results, some of which might be of type Failed...
+    ...
+```
+
+The we can query for errors in the report...
+
+```clj
+    (is (empty? (ts/query-for-failures report)))))
+```
+
+If it's not empty, the bindings returned will contain descriptions of
+the failures with hopefully helpful information.
+
+### When your graph requires a schema
+
+Some graph representations such as datascript and datomic require that
+you provide a schema which may be part of your graph content.
+
+In such cases you should provide a triple like this:
+
+```clj
+(add report [::ts/StandardIGraphImplementationReport ::ts/schemaGraph <schema-graph>])
+```
+
+Where <schema-graph> contains a graph with just the schema
+content. Various tests will use this to filter out this stuff when
+comparing test results to canonical data.
+
+
 ## Developer notes
 
 The Makefile has targets for most of the usual stuff.
+
 
 It presumes that your `~/.clojure/deps.edn` has aliases as follows:
 
@@ -1354,6 +1443,10 @@ It presumes that your `~/.clojure/deps.edn` has aliases as follows:
 
 }
 ```
+
+The `nvd` target presumes installation of https://github.com/rm-hull/nvd-clojure
+
+
 
 <a name="h2-future-work"></a>
 ## Future work

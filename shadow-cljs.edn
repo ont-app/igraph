@@ -5,7 +5,8 @@
   ;; `shadow-cljs compile node-test`
   :node-test {:target :node-test
              :output-to "out/test/igraph.js"
-             :autorun true
+              :autorun true
+              ;;:compiler-options {:infer-externs :auto}
              }
   } ;; /builds
 }

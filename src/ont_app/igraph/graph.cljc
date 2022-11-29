@@ -57,8 +57,6 @@ The core type declaration:
              ]
             ))
 
-
-
 (declare query-graph) ;; defined below
 (declare get-intersection)
 (declare get-contents)
@@ -272,7 +270,7 @@ Where
       (make-graph
        :contents (reduce collect-vector (get-contents g) triples)))))
 
-(defmethod remove-from-graph [Graph :vector]
+#_(defmethod old_remove-from-graph [Graph :vector]
   [g to-remove]
   ;; Where
   ;; `to-remove` may be [s] [s p] [s p o]
@@ -280,7 +278,25 @@ Where
     g
     (make-graph
      :contents (-dissoc-in (get-contents g)
-                               to-remove))))
+                           to-remove))))
+
+(defmethod remove-from-graph [Graph :vector]
+  [g to-remove]
+  ;; Where
+  ;; `to-remove` may be [s] [s p] [s p o], or [s p1 o1, p2 o2, ...]
+  (if (empty? to-remove)
+    g
+    (make-graph
+     :contents (if (<= (count to-remove) 3)
+                 (-dissoc-in (get-contents g)
+                             to-remove)
+                 ;; else this is a long vector
+                 (let [diminish-contents (fn [s acc [p o]]
+                                           (-dissoc-in acc [s p o]))
+                       ]
+                   (reduce (partial diminish-contents (first to-remove))
+                           (get-contents g)
+                           (partition 2 (rest to-remove))))))))
 
 
 (defmethod remove-from-graph [Graph :underspecified-triple]
