@@ -3,58 +3,59 @@
    #?(:cljs [cljs.test :refer-macros [async deftest is testing]]
       :clj [clojure.test :refer :all])
    [ont-app.igraph.core :as igraph]
-   [ont-app.igraph.graph :as g] 
+   [ont-app.igraph.graph :as native-normal :refer [make-graph]] 
    [ont-app.igraph.core-test :as ct]
+   [ont-app.igraph.test-support :as ts]
    ))
 
 
 ;; README EXAMPLES
-(reset! ct/initial-graph (g/make-graph))
+(def readme-test-report
+  "Holds the contents of the readme-examples report to examine in case of failure"
+  (atom nil))
 
-(reset! ct/eg
-        (g/make-graph :contents ct/eg-data))
+(defn make-test-graph
+  ^ont_app.igraph.graph.Graph [data]
+  (make-graph :contents data))
 
-(reset! ct/other-eg
-        (g/make-graph :contents ct/other-eg-data))
+(defn make-standard-report
+  []
+  (-> 
+   (make-graph)
+   (igraph/add [::ts/StandardIGraphImplementationReport
+                ::ts/makeGraphFn make-test-graph])))
 
-(reset! ct/eg-with-types
-        (igraph/add @ct/eg ct/types-data))
+(deftest standard-implementation-tests
+  "Standard tests against examples in the IGraph README for immutable set-enabled graphs"
+  (let [report (-> (make-standard-report)
+                   (ts/run-standard-implementation-tests))
 
-(reset! ct/eg-for-cardinality-1
-        (igraph/add @ct/eg-with-types
-                    ct/cardinality-1-appendix))
-                        
+        ]
+    ;; `report` with be a graph of test results, some of which might be of type Failed...
+    (reset! readme-test-report report)
+    (is (empty? (ts/query-for-failures report)))))
 
-(deftest readme-examples
-  (testing "core test readme"
-    (ct/readme)
-    (ct/readme-immutable)
-    (ct/readme-set-operations))
-  (testing "query"
-    (is (= (igraph/query @ct/eg [[:?person :ig-ctest/isa :ig-ctest/person]])
-           #{{:?person :ig-ctest/mary} {:?person :ig-ctest/john}})))
-  )
+;; These tests are specific to the actual implementation (there may be some overlap with
+;; the readme tests)
 
-
-;; (def test-graph (igraph/add (g/make-graph) [[:a :b :c]]))
-(def test-graph (igraph/add (g/make-graph)
-                     [[:john :isa :person]
-                      [:john :likes :meat]
-                      [:john :name {:value "John" :lang "en"}]
-                      [:mary
-                       :isa :person
-                       :likes :coke
-                       :name {:value "Mary" :lang "en"}
-                       ]
-                      [:likes :isa :property]
-                      [:isa :isa :property]
-                      [:meat :isa :food]
-                      [:coke :isa :drink]
-                      [:drink :subClassOf :consumable]
-                      [:food :subClassOf :consumable]
-                      [:consumable :subClassOf :thing]
-                      [:person :subClassOf :thing]
-                      ]))
+(def test-graph (igraph/add (make-graph)
+                            [[:john :isa :person]
+                             [:john :likes :meat]
+                             [:john :name {:value "John" :lang "en"}]
+                             [:mary
+                              :isa :person
+                              :likes :coke
+                              :name {:value "Mary" :lang "en"}
+                              ]
+                             [:likes :isa :property]
+                             [:isa :isa :property]
+                             [:meat :isa :food]
+                             [:coke :isa :drink]
+                             [:drink :subClassOf :consumable]
+                             [:food :subClassOf :consumable]
+                             [:consumable :subClassOf :thing]
+                             [:person :subClassOf :thing]
+                             ]))
 
 ;; ^traversal-fn
 (def subClassOf* (igraph/transitive-closure :subClassOf))
@@ -64,12 +65,12 @@
   [context
    (->> queue 
         (igraph/traverse g (igraph/traverse-link :isa)
-                     (assoc (dissoc context :seek)
-                            :phase :isa) #{})
+                         (assoc (dissoc context :seek)
+                                :phase :isa) #{})
         vec
         (igraph/traverse g (igraph/transitive-closure :subClassOf)
-                     (assoc context :phase :sc)
-                     #{}))
+                         (assoc context :phase :sc)
+                         #{}))
    []])
 
 (deftest invoke-test
@@ -160,9 +161,9 @@
             :person {:subClassOf #{:thing}}}
            ))
     (is (= (igraph/normal-form (igraph/subtract test-graph [[:john
-                                               :likes :meat
-                                               :isa :person]
-                                              [:mary :name]]))
+                                                             :likes :meat
+                                                             :isa :person]
+                                                            [:mary :name]]))
            {:john {:name #{{:value "John", :lang "en"}}},
             :mary {:isa #{:person}, :likes #{:coke}},
             :likes {:isa #{:property}},
@@ -180,21 +181,21 @@
 (deftest query-test
   (testing "Tests a basic query against the dummy test-graph"
     (is (= 
-            (igraph/query test-graph
-                          [[:?liker :likes :?likee]
-                           [:?likee :isa :?type]]
-                          )
-           #{{:?type :drink,
-              :?likee :coke,
-              :?liker :mary}
-             {:?type :food,
-              :?likee :meat,
-              :?liker :john}}
-           ))
+         (igraph/query test-graph
+                       [[:?liker :likes :?likee]
+                        [:?likee :isa :?type]]
+                       )
+         #{{:?type :drink,
+            :?likee :coke,
+            :?liker :mary}
+           {:?type :food,
+            :?likee :meat,
+            :?liker :john}}
+         ))
     (is (= (igraph/query test-graph
-                  [[:?liker :likes :?likee]
-                   [:?likee :isa :?class]
-                   [:?class subClassOf* :?super]])
+                         [[:?liker :likes :?likee]
+                          [:?likee :isa :?class]
+                          [:?class subClassOf* :?super]])
            #{{:?super :thing, :?class :food, :?likee :meat, :?liker :john}
              {:?super :thing, :?class :drink, :?likee :coke, :?liker :mary}
              {:?super :food, :?class :food, :?likee :meat, :?liker :john}
@@ -219,9 +220,9 @@
 
     (is (= (igraph/unique [:just-me :no-theres-me-too!] first)
            :just-me))
-   
+    
     ;; specific to Graph, not part of IGraph
-    (is (= (set (g/vector-of-triples test-graph))
+    (is (= (set (native-normal/vector-of-triples test-graph))
            #{[:consumable :subClassOf :thing]
              [:person :subClassOf :thing]
              [:isa :isa :property]
@@ -240,31 +241,31 @@
 
 (deftest iset-test
   (testing "Test the ISet functions"
-    (let [g1 (igraph/add (g/make-graph) [[:a :b :c :d :e]
-                                     [:f :g :h :i :j]
-                                     ])
-          g2 (igraph/add (g/make-graph) [[:a :b :c]
-                                     [:x :y :z]])
+    (let [g1 (igraph/add (make-graph) [[:a :b :c :d :e]
+                                       [:f :g :h :i :j]
+                                       ])
+          g2 (igraph/add (make-graph) [[:a :b :c]
+                                       [:x :y :z]])
           ]
-                               
+      
       (is (= (igraph/normal-form (igraph/union g1 g2))
-             (igraph/normal-form (igraph/add (g/make-graph) [[:a :b :c :d :e]
-                                                     [:f :g :h :i :j]
-                                                     [:x :y :z]
-                                                     ]))))
+             (igraph/normal-form (igraph/add (make-graph) [[:a :b :c :d :e]
+                                                           [:f :g :h :i :j]
+                                                           [:x :y :z]
+                                                           ]))))
       (is (= (igraph/normal-form (igraph/intersection g1 g2))
-             (igraph/normal-form (igraph/add (g/make-graph)
-                                     [[:a :b :c]]))))
+             (igraph/normal-form (igraph/add (make-graph)
+                                             [[:a :b :c]]))))
       (is (= (igraph/normal-form (igraph/difference g1 g2))
-             (igraph/normal-form (igraph/add (g/make-graph)
-                                     [[:a :d :e]
-                                      [:f :g :h :i :j]]))))
+             (igraph/normal-form (igraph/add (make-graph)
+                                             [[:a :d :e]
+                                              [:f :g :h :i :j]]))))
       )))
 
 (deftest traverse-test
   (testing "Test traverse and transitive-closure"
-    (let [g (igraph/add (g/make-graph)
-                    [[:a :isa :b] [:b :isa :c][:c :isa :d]])
+    (let [g (igraph/add (make-graph)
+                        [[:a :isa :b] [:b :isa :c][:c :isa :d]])
           isa* (fn [g context acc to-visit]
                  [context,
                   (conj acc (first to-visit)),
@@ -297,12 +298,12 @@
    (deftest io-test
      (testing "Saving and restoring"
        (let [test-path (igraph/write-to-file "/tmp/igraph-test.edn" test-graph)
-             test-graph' (igraph/read-from-file (g/make-graph) test-path)
+             test-graph' (igraph/read-from-file (make-graph) test-path)
              ]
          (is (= (.exists (clojure.java.io/as-file test-path))
                 true))
          (is (= (igraph/normal-form test-graph')
                 (igraph/normal-form test-graph)))
          (clojure.java.io/delete-file test-path)))))
-         
-         
+
+

@@ -719,11 +719,34 @@ Where
         ]
     (reduce-kv maybe-setify {} m)))
 
-(defn assert-unique 
-  "Returns `g`', replacing any existing [s p *] with [s p o]"
-  [g s p o]
-  (add (subtract g [s p])
-       [s p o]))
+(defn assert-unique-fn
+  "Returns `g`', replacing any existing [s p *] with [s p o] per `context`
+  Where
+  - `g` is a graph
+  - `context` := m s.t. (keys m) = #{:add-fn :subtrct-fn}
+  - `add-fn` is one of #{add, add! claim} appropriate to `g`'s modification protocol
+  - `subtract-fn` is one of #{subtract, subtract! retract} appropriate to `g`'s
+     modification protocol
+   "
+  ([context g s p o]
+   (let [{:keys [add-fn subtract-fn]} context
+         ]
+     (add-fn (subtract-fn g [s p])
+             [s p o]))))
+
+(def assert-unique
+  "fn [g s p o] -> g', asserting a unique triple in immutable graph.
+  - Wrapper around `assert-unique-fn`"
+  (partial assert-unique-fn {:add-fn add :subtract-fn subtract}))
+(def assert-unique!
+  "fn [g s p o] -> g', asserting a unique triple in mutable graph.
+  - Wrapper around `assert-unique-fn`"
+  (partial assert-unique-fn {:add-fn add! :subtract-fn subtract!}))
+
+(def claim-unique
+    "fn [g s p o] -> g', asserting a unique triple in an accumulate-only graph .
+  - Wrapper around `assert-unique-fn`"
+  (partial assert-unique-fn {:add-fn claim :subtract-fn retract}))
 
 (defn reduce-spo 
   "Returns `acc'` s.t. (f acc s p o) -> `acc'` for every triple in `g`

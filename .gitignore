@@ -1,10 +1,12 @@
 *#
 *.class
 *.jar
-*~
+.cpcache/
 .nrepl-port
+.shadow-cljs/
 /checkouts
 /classes
+/cljs-test-runner-out
 /dev
 /node_modules
 /out

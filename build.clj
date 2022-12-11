@@ -6,7 +6,7 @@
 
 (def lib 'ont-app/igraph)
 
-(def version "0.2.0-SNAPSHOT")
+(def version "0.2.0")
 
 (defn test "Run the tests." [opts]
   (bb/run-tests opts))
