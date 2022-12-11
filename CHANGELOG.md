@@ -1,11 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
-## [0.2.0] - 2022-11-28
-### Added
-- Clojure CLI configuration
-### Removed
-- Leiningen configuration
+## [0.2.0] - 2022-12-11
+- Lein -> Clojure CLI
+- Fix for issue #7
+  - Added a test_support.cljc module
+  - Converted tests to reference test_support
 
 ## [0.1.8] - 2021-12-15
 ### Added
