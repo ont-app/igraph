@@ -27,7 +27,7 @@
            :build {
                    :deps {
                           io.github.seancorfield/build-clj {:git/tag "v0.8.5"
-                                                            :git/sha "de693d0" ;;"7ac1f8d"
+                                                            :git/sha "de693d0"
                                                             }
                           }
                    :ns-default build

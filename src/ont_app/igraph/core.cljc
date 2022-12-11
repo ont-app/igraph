@@ -734,9 +734,19 @@ Where
      (add-fn (subtract-fn g [s p])
              [s p o]))))
 
-(def assert-unique (partial assert-unique-fn {:add-fn add :subtract-fn subtract}))
-(def assert-unique! (partial assert-unique-fn {:add-fn add! :subtract-fn subtract!}))
-(def claim-unique (partial assert-unique-fn {:add-fn claim :subtract-fn retract}))
+(def assert-unique
+  "fn [g s p o] -> g', asserting a unique triple in immutable graph.
+  - Wrapper around `assert-unique-fn`"
+  (partial assert-unique-fn {:add-fn add :subtract-fn subtract}))
+(def assert-unique!
+  "fn [g s p o] -> g', asserting a unique triple in mutable graph.
+  - Wrapper around `assert-unique-fn`"
+  (partial assert-unique-fn {:add-fn add! :subtract-fn subtract!}))
+
+(def claim-unique
+    "fn [g s p o] -> g', asserting a unique triple in an accumulate-only graph .
+  - Wrapper around `assert-unique-fn`"
+  (partial assert-unique-fn {:add-fn claim :subtract-fn retract}))
 
 (defn reduce-spo 
   "Returns `acc'` s.t. (f acc s p o) -> `acc'` for every triple in `g`

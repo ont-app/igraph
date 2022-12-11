@@ -10,14 +10,19 @@
   (:require
    [ont-app.igraph.core :as igraph]
    [ont-app.igraph.graph :as native-normal]
+   [clojure.set]
    ))
 
 ;; FUN WITH READER MACROS
-(def cljc-LazySeq #?(:clj clojure.lang.LazySeq
-                     :cljs cljs.core/LazySeq))
+(def cljc-LazySeq
+  "LazySeq type in clj(s)"
+  #?(:clj clojure.lang.LazySeq
+     :cljs cljs.core/LazySeq))
 
-(def cljc-format #?(:clj clojure.core/format
-                    :cljs goog.string.format))
+(def cljc-format
+  "The format function in clj(s)"
+  #?(:clj clojure.core/format
+     :cljs goog.string.format))
 
 ;; NO READER MACROS BELOW THIS POINT
 
@@ -41,11 +46,12 @@
                        (native-normal/make-graph
                         :contents (igraph/normal-form schema-graph)))))
 
-(defn do-report! [report desc]
+(defn do-report! 
   "Side-effect: Modifies `report` in include `desc`. Returns @report
 Where
 - `report` is an atom containing the report graph
 - `desc` is a normal-form description to be added to `report`"
+  [report desc]
   (swap! report igraph/add desc)
   @report)
 
@@ -135,14 +141,14 @@ Where
    :igraph-test/mary
    {:igraph-test/isa #{:igraph-test/person}, :igraph-test/likes #{:igraph-test/chicken}}})
 
-(def the igraph/unique)
+(def ^:private the igraph/unique)
 
 (defn test-readme-eg-access
   "Returns `report'` for `report`, given `eg-graph`, possibly informed by `readme-schema-graph`
   Where
   -  `report` is a native-normal IGraph recording tests and their outcomes
-  - `eg` is a graph in the target IGraph implementation containing
-    `readme-example-content`
+  - `eg-graph` is a graph in the target IGraph implementation containing
+    `readme-example-content`, created per the configuration of `report`
   - `readme-schema-graph` (optional) is a target IGraph implementation initialized with
      whatever schema configuration is required by the target implementation.
      (Datascript for example). Default is nil.
@@ -154,7 +160,6 @@ Where
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          test-fn-var #'test-readme-eg-access
          report' (atom report)
-         report! (partial do-report! report' test-fn-var)
          assert-and-report! (partial do-assert-and-report! report' test-fn-var)
          ]
      (or
@@ -290,7 +295,7 @@ Where
            ) ;; mutability cases
 
          ;; UTILITIES
-         (letfn [(tally-triples [tally s p o]
+         (letfn [(tally-triples [tally _s _p _o]
                    (inc tally))
                  ]
            (assert-and-report!
@@ -319,6 +324,7 @@ Where
    })
 
 (def eg-with-types-data
+  "Data to populate a test graph with the `eg-with-types` example graph in README"
   (-> (native-normal/make-graph)
       (igraph/add eg-data)
       (igraph/add types-data)
@@ -328,7 +334,7 @@ Where
   "Returns `report'` given `eg-with-types-graph`
   where
   - `report` is a native-normal graph
-  - `eg-with-types-graph` is an instance of the target graph initialized with `eg-data` + `eg-with-types-data`
+  - `eg-with-types-graph` is an instance of the target graph initialized with `eg-data` + `eg-with-types-data`, created per the configuration of `report`.
   NOTE: these tests all have to do with traversal.
   "
   ([report]
@@ -337,7 +343,6 @@ Where
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          test-fn-var #'test-readme-eg-traversal
          report' (atom report)
-         report! (partial do-report! report' test-fn-var)
          assert-and-report! (partial do-assert-and-report! report' test-fn-var)
          ]
      (or
@@ -475,7 +480,6 @@ Where
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          test-fn-var #'test-cardinality-1
          report' (atom report)
-         report! (partial do-report! report' test-fn-var)
          assert-and-report! (partial do-assert-and-report! report' test-fn-var)
          ]
      (or (report-invalid-test-graph report'
@@ -553,7 +557,6 @@ Where
          make-graph (the (report ::StandardIGraphImplementationReport ::makeGraphFn))
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          report' (atom report)
-         report! (partial do-report! report' test-fn-var)
          assert-and-report! (partial do-assert-and-report! report' test-fn-var)
          ]
      (or (report-invalid-test-graph report' (make-graph eg-data)
@@ -649,7 +652,9 @@ Where
         (igraph/mutability))
   ))
 
-(defmulti test-readme-eg-mutation test-readme-eg-mutation-dispatch)
+(defmulti test-readme-eg-mutation
+  "Returns `report`', modified per tests on mutability, dispatched on the mutability attribute of the graph under examination."
+  test-readme-eg-mutation-dispatch)
 
 (defmethod test-readme-eg-mutation ::igraph/immutable
   ([report]
@@ -717,7 +722,6 @@ Where
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          test-fn-var #'test-readme-eg-set-operations
          report' (atom report)
-         report! (partial do-report! report' test-fn-var)
          assert-and-report! (partial do-assert-and-report! report' test-fn-var)
          ]
      (or
@@ -771,6 +775,7 @@ Where
         )))))
 
 (defn run-standard-implementation-tests
+  "One-liner to test a fully-featured implemenation of all the IGraph protocols."
   [report]
   (-> report
       (test-readme-eg-access)
