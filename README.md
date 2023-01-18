@@ -80,16 +80,13 @@ There is a [15-minute video introduction here](https://www.youtube.com/watch?v=B
 ---
 
 <a name="h2-dependencies"></a>
-## Dependencies
+## Installation
 
 This is deployed to [clojars](https://clojars.org/ont-app/igraph):
 
 [![Clojars
 Project](https://img.shields.io/clojars/v/ont-app/igraph.svg)](https://clojars.org/ont-app/igraph)
 
-```
-[ont-app/igraph "0.1.7"]
-```
 
 Require thus:
 ```

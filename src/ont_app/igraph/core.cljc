@@ -309,7 +309,7 @@ NOTE: see Datomic documentation for details
   "Returns `g`, with `to-remove` removed
   Where
   -   `g` is a Graph
-  -   `to-add` is interpetable as a set of triples
+  -   `to-remove` is interpetable as a set of triples
   Dispatched according to `triples-removal-format`
   "  
   (fn [g to-remove] [(type g) (triples-removal-format to-remove)]))

@@ -74,7 +74,8 @@
                   ]
               (is (= (-> (ts/query-for-failures report)
                          igraph/unique
-                         :?test)
+                         :?test
+                         )
                      ::ts/TestGraphExistsTest))))
   
    (testing "Non-satisfactory test graph"
@@ -87,8 +88,11 @@
                   ]
               (is (= (-> (ts/query-for-failures report)
                          igraph/unique
-                         :?test)
-                     ::ts/TestGraphSatisfiesProtocolTest))))
+                         :?test
+                         (name)
+                         )
+                     "TestGraphSatisfiesProtocolTest_ont_app.igraph.core.IGraph"
+                     ))))
 
    (testing "Faulty contents test graph"
             (let [report (ts/report-invalid-test-graph

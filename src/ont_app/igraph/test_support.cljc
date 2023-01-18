@@ -8,10 +8,16 @@
    "http://rdf.naturallexicon.org/ont-app/igraph/igraph-test#"
    }
   (:require
+   [clojure.set]
+   [clojure.spec.alpha :as spec]
    [ont-app.igraph.core :as igraph]
    [ont-app.igraph.graph :as native-normal]
-   [clojure.set]
    ))
+
+;; SPEX
+(spec/def ::report
+  (spec/or ::is-nil nil?
+           ::is-native-normal-graph (partial instance? ont_app.igraph.graph.Graph)))
 
 ;; FUN WITH READER MACROS
 (def cljc-LazySeq
@@ -24,7 +30,7 @@
   #?(:clj clojure.core/format
      :cljs goog.string.format))
 
-;; NO READER MACROS BELOW THIS POINT
+;; NO READER MACROS BELOW THIS POINT except in try/catch macros
 
 (def subClassOf*
   "A traversal function. Transitive closure of subClassOf"
@@ -81,6 +87,10 @@ Where
                  ::observed observed
                  ::expected expected])))
 
+(defn report-atom
+  [g]
+  (atom g :validator (fn [g] (spec/valid? ::report g))))
+
 (defn report-invalid-test-graph
   "Returns `report`' if `test-graph` is not valid, otherwise nil.
   Where
@@ -94,7 +104,8 @@ Where
   "
   [report test-graph & {:keys [test-fn-var protocol content-var schema-graph]}]
   (assert (var? content-var))
-  (let [report' (atom report)
+
+  (let [report' (report-atom report)
         ]
     (if (not test-graph)
       (do-report! report'
@@ -110,12 +121,12 @@ Where
       (if #?(:clj (and protocol (not (satisfies? protocol test-graph)))
              :cljs false) ;; cljs doesn't do this well
         (do-report! report'
-                    [::TestGraphSatisfiesProtocolTest
+                    [(keyword (str *ns*) (str "TestGraphSatisfiesProtocolTest_" (:on protocol)))
                      :rdf/type ::Failed
                      ::inTest test-fn-var
                      :rdfs/comment (cljc-format "Test graph for %s does not satisfy %s in %s"
                                            content-var
-                                           protocol
+                                           (:on protocol)
                                            test-fn-var
                                            )
                      
@@ -159,11 +170,11 @@ Where
          eg-graph (make-graph eg-data)
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          test-fn-var #'test-readme-eg-access
-         report' (atom report)
+         report' (report-atom report)
          assert-and-report! (partial do-assert-and-report! report' test-fn-var)
          ]
      (or
-      (report-invalid-test-graph report'
+      (report-invalid-test-graph report ;;report'
                                  eg-graph
                                  :test-fn-var test-fn-var
                                  :protocol igraph/IGraph
@@ -250,10 +261,10 @@ Where
          (assert-and-report!
           ::Invoke3ArgTestFalsey
           "(not (eg-graph :mary :likes :beef)) output"
-          (some? (eg-graph :igraph-test/mary
-                           :igraph-test/likes
-                           :igraph-test/beef))
-          false)
+          (not (eg-graph :igraph-test/mary
+                         :igraph-test/likes
+                         :igraph-test/beef))
+          true)
          
          ;; MUTABILITY
          (assert-and-report!
@@ -342,11 +353,11 @@ Where
          eg-with-types-graph (make-graph eg-with-types-data)
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          test-fn-var #'test-readme-eg-traversal
-         report' (atom report)
+         report' (report-atom report)
          assert-and-report! (partial do-assert-and-report! report' test-fn-var)
          ]
      (or
-      (report-invalid-test-graph report'
+      (report-invalid-test-graph report
                                  eg-with-types-graph
                                  :test-fn-var test-fn-var
                                  :protocol igraph/IGraph
@@ -479,10 +490,10 @@ Where
          cardinality-1-graph (make-graph cardinality-1-graph-data)
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          test-fn-var #'test-cardinality-1
-         report' (atom report)
+         report' (report-atom report)
          assert-and-report! (partial do-assert-and-report! report' test-fn-var)
          ]
-     (or (report-invalid-test-graph report'
+     (or (report-invalid-test-graph report
                                     cardinality-1-graph
                                     :test-fn-var test-fn-var
                                     :protocol igraph/IGraph
@@ -556,10 +567,10 @@ Where
    (let [{:keys [test-fn-var protocol add-fn subtract-fn assert-unique-fn]} context
          make-graph (the (report ::StandardIGraphImplementationReport ::makeGraphFn))
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
-         report' (atom report)
+         report' (report-atom report)
          assert-and-report! (partial do-assert-and-report! report' test-fn-var)
          ]
-     (or (report-invalid-test-graph report' (make-graph eg-data)
+     (or (report-invalid-test-graph report (make-graph eg-data)
                                     :test-fn-var test-fn-var
                                     :protocol protocol
                                     :content-var #'eg-data
@@ -607,7 +618,6 @@ Where
               {:igraph-test/john {:igraph-test/isa #{:igraph-test/person}}, 
                :igraph-test/mary {:igraph-test/isa #{:igraph-test/person},
                                   :igraph-test/likes #{:igraph-test/chicken}}}))
-
            (let [eg-graph (make-graph eg-data)
                  g (assert-unique-fn eg-graph
                                      :igraph-test/john :igraph-test/isa :igraph-test/man)
@@ -637,8 +647,8 @@ Where
                (assert-and-report!
                 ::SubtractLongvVectorTest
                 "Subtracting vector with 5 elements"
-                (g-subtracted :igraph-test/moe)
-                nil)))
+                (empty? (g-subtracted :igraph-test/moe))
+                true)))
            )))))
 
 
@@ -672,10 +682,10 @@ Where
   ;; "Returns report for mutations under a mutable igraph"
   ([report]
    (test-readme-eg-mutation-fn
-    {:protocol igraph/IGraphImmutable
-     :add-fn igraph/add
-     :subtract-fn igraph/subtract
-     :assert-unique-fn igraph/assert-unique
+    {:protocol igraph/IGraphMutable
+     :add-fn igraph/add!
+     :subtract-fn igraph/subtract!
+     :assert-unique-fn igraph/assert-unique!
      :test-fn-var #'test-readme-eg-mutation
      }
     report
@@ -721,17 +731,17 @@ Where
          other-graph (make-graph other-eg-data)
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          test-fn-var #'test-readme-eg-set-operations
-         report' (atom report)
+         report' (report-atom report)
          assert-and-report! (partial do-assert-and-report! report' test-fn-var)
          ]
      (or
-      (report-invalid-test-graph report' eg-graph
+      (report-invalid-test-graph report eg-graph
                                  :test-fn-var test-fn-var
                                  :protocol igraph/IGraphSet
                                  :content-var #'eg-data
                                  :schema-graph schema-graph)
       
-      (report-invalid-test-graph report' other-graph
+      (report-invalid-test-graph report other-graph
                                  :test-fn-var test-fn-var
                                  :protocol igraph/IGraphSet
                                  :content-var #'other-eg-data
@@ -801,8 +811,20 @@ Where
   (let [maybe-assoc (fn [b k]
                       ;; add a value for `k` to `b` if observed
                       ;; where `b` is a binding for an error query with :?test
-                      (if-let [b' (igraph/unique (igraph/query report
-                                                               [[(:?test b) k :?value]]))
+                      (if-let [b' (try
+                                    (igraph/unique (igraph/query report
+                                                                 [[(:?test b) k :?value]])
+                                                   ;; first ;; in case of multiple failures
+                                                   )
+                                    (catch #?(:clj Exception :cljs js/Error) e
+                                      (throw (ex-info "Query failure in query-for-failures"
+                                                      (merge (ex-data e)
+                                                             {
+                                                              :type ::QueryFailure
+                                                              ::report report
+                                                              ::b b
+                                                              ::k k
+                                                              })))))
                                ]
                         (assoc b k (:?value b'))
                         ;; else
