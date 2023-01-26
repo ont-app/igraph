@@ -26,10 +26,10 @@
            ;; for help: clojure -A:deps -T:build help/doc
            :build {
                    :deps {
-                          io.github.seancorfield/build-clj {:git/tag "v0.8.5"
-                                                            :git/sha "de693d0"
-                                                            }
-                          org.clojure/tools.deps {:mvn/version "0.16.1264"}
+                          io.github.seancorfield/build-clj {:git/tag "v0.9.2"
+                                                            :git/sha "9c9f078"
+                                                            }                          
+                          org.clojure/tools.deps {:mvn/version "0.18.1335"}
                           }
                    :ns-default build
                    }
@@ -50,9 +50,12 @@
            ;; SHADOW-CLJS SUPPORT
            ;; Alias referenced in shadow-cljs.edn
            :shadow {
-                    :extra-deps {thheller/shadow-cljs {:mvn/version "2.20.14"}}
+                    :extra-deps {thheller/shadow-cljs {:mvn/version "2.22.10"}}
                     :extra-paths ["test"]
                     }
            } ;; aliases
  }
-
+;; NVD notes
+;; CVE-2023-0247 is flagged for clojurescript-1.11.60.jar, but seems to pertain to a go repo
+;; CVE-2022-45688 jackson-core-2.8.7.jar. Excluding this breaks tests.
+;; linked to https://github.com/stleary/JSON-java/issues/708

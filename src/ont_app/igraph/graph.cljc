@@ -171,14 +171,17 @@ The core type declaration:
 (defmethod add-to-graph [Graph :vector] [g triple-spec]
   (if (empty? triple-spec)
     g
-    (add-to-graph g [triple-spec])))
-
+    (add-to-graph g
+                  ^{::igraph/triples-format :vector-of-vectors}
+                  [triple-spec])))
 
 (defmethod add-to-graph [Graph cljc-lazy-seq]
   [g the-seq]
   (if (empty? the-seq)
     g
-    (add-to-graph g (vec the-seq))))
+    (add-to-graph g
+                  ^{::igraph/triples-format :vector}
+                  (vec the-seq))))
 
 
 (defn- -dissoc-in 

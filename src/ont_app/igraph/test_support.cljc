@@ -58,6 +58,7 @@ Where
 - `report` is an atom containing the report graph
 - `desc` is a normal-form description to be added to `report`"
   [report desc]
+  (tap> {:type ::do-report! ::report report ::desc desc})
   (swap! report igraph/add desc)
   @report)
 
@@ -91,6 +92,15 @@ Where
   [g]
   (atom g :validator (fn [g] (spec/valid? ::report g))))
 
+(defn tap-value
+  "Returns `tap-val`
+  Side-effect: tap>'s `tap-val` in map {:type `tap-type` :value `tap-val`"
+  [tap-type tap-val]
+  (tap> {:type tap-type
+         :value tap-val
+         })
+  tap-val)
+
 (defn report-invalid-test-graph
   "Returns `report`' if `test-graph` is not valid, otherwise nil.
   Where
@@ -105,45 +115,56 @@ Where
   [report test-graph & {:keys [test-fn-var protocol content-var schema-graph]}]
   (assert (var? content-var))
 
-  (let [report' (report-atom report)
-        ]
-    (if (not test-graph)
-      (do-report! report'
-                  [::TestGraphExistsTest
-                   :rdf/type ::Failed
-                   ::inTest test-fn-var
-                   :rdfs/comment (cljc-format "Test graph for %s was nil in %s"
-                                              content-var
-                                              test-fn-var
-                                              )
-                   ])
-      ;; else the test graph exists
-      (if #?(:clj (and protocol (not (satisfies? protocol test-graph)))
-             :cljs false) ;; cljs doesn't do this well
-        (do-report! report'
-                    [(keyword (str *ns*) (str "TestGraphSatisfiesProtocolTest_" (:on protocol)))
-                     :rdf/type ::Failed
-                     ::inTest test-fn-var
-                     :rdfs/comment (cljc-format "Test graph for %s does not satisfy %s in %s"
-                                           content-var
-                                           (:on protocol)
-                                           test-fn-var
-                                           )
-                     
-                     ])
-        ;; else the graph satisfies. How's the content?
-        (if (not (= (igraph/normal-form (sans-schema test-graph schema-graph))
-                    (deref content-var)))
+  (tap-value
+   ::report-invalid-test-graph-result
+   (let [report' (report-atom report)
+         ]
+     (if (not test-graph)
+       (tap-value
+        ::NoGraph
+        (do-report!
+         report'
+         [::TestGraphExistsTest
+          :rdf/type ::Failed
+          ::inTest test-fn-var
+          :rdfs/comment (cljc-format "Test graph for %s was nil in %s"
+                                     content-var
+                                     test-fn-var
+                                     )
+          ]))
+       ;; else the test graph exists
+       (if #?(:clj (and protocol (not (satisfies? protocol test-graph)))
+              :cljs false) ;; cljs doesn't do this well
+         (tap-value
+          ::NoSatisifaction
           (do-report! report'
-                      [::TestGraphContentTest
+                      [(keyword (str *ns*) (str "TestGraphSatisfiesProtocolTest_" (:on protocol)))
                        :rdf/type ::Failed
                        ::inTest test-fn-var
-                       :rdfs/comment (cljc-format "Test graph for %s does not have expected contents in %s"
-                                             content-var
-                                             test-fn-var)
-                       ::observed (igraph/normal-form (sans-schema test-graph schema-graph))
-                       ::expected (deref content-var)
-                       ]))))))
+                       :rdfs/comment (cljc-format "Test graph for %s does not satisfy %s in %s"
+                                                  content-var
+                                                  (:on protocol)
+                                                  test-fn-var
+                                                  )
+                       
+                       ]))
+         ;; else the graph satisfies. How's the content?
+         (if (not (= (igraph/normal-form (sans-schema test-graph schema-graph))
+                     (deref content-var)))
+           (tap-value
+            ::FailedContentTest
+            (do-report! report'
+                        [::TestGraphContentTest
+                         :rdf/type ::Failed
+                         ::inTest test-fn-var
+                         :rdfs/comment (cljc-format "Test graph for %s does not have expected contents in %s"
+                                                    content-var
+                                                    test-fn-var)
+                         ::observed (igraph/normal-form (sans-schema test-graph schema-graph))
+                         ::expected (deref content-var)
+                         ])))))
+     
+     )))
 
 
 (def eg-data "Initial data for the `eg` graph in the README"
@@ -157,31 +178,38 @@ Where
 (defn test-readme-eg-access
   "Returns `report'` for `report`, given `eg-graph`, possibly informed by `readme-schema-graph`
   Where
-  -  `report` is a native-normal IGraph recording tests and their outcomes
+  -  `report` is a native-normal IGraph recording tests and their outcomes with
+     vocabulary:
+     - `::StandardIGraphImplementationReport` `::makeGraphFn` fn [data] -> `eg-graph`]
+     - `::StandardIGraphImplementationReport` `::schemaGraph` `readme-schema-graph`]
   - `eg-graph` is a graph in the target IGraph implementation containing
     `readme-example-content`, created per the configuration of `report`
   - `readme-schema-graph` (optional) is a target IGraph implementation initialized with
      whatever schema configuration is required by the target implementation.
      (Datascript for example). Default is nil.
+  - `data` is an appropriate argument to one of the add methods
   NOTE: these tests are for the access functions defined for IGraph.
   "
   ([report]
+   (tap-value
+    ::starting-test-readme-eg-access
+    report)
    (let [make-graph (the (report ::StandardIGraphImplementationReport ::makeGraphFn))
          eg-graph (make-graph eg-data)
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          test-fn-var #'test-readme-eg-access
-         report' (report-atom report)
-         assert-and-report! (partial do-assert-and-report! report' test-fn-var)
          ]
      (or
-      (report-invalid-test-graph report ;;report'
+      (report-invalid-test-graph report 
                                  eg-graph
                                  :test-fn-var test-fn-var
                                  :protocol igraph/IGraph
                                  :content-var #'eg-data
                                  :schema-graph schema-graph
                                  )
-       (let []
+      (let [report' (report-atom report)
+            assert-and-report! (partial do-assert-and-report! report' test-fn-var)
+            ]
          (assert-and-report!
           ::SansSchemaTest
           "eg-graph content after removing any schema"
@@ -317,8 +345,9 @@ Where
                  (igraph/reduce-spo tally-triples 0 schema-graph)
                  0))
             4))
-         )) ;; cond
-     @report')))
+         @report'
+         ) ;; let level 2
+      ))))
 
 (def types-data
   "Contents of the `eg-with-types` graph from the README."
@@ -344,7 +373,11 @@ Where
 (defn test-readme-eg-traversal
   "Returns `report'` given `eg-with-types-graph`
   where
-  - `report` is a native-normal graph
+  -  `report` is a native-normal IGraph recording tests and their outcomes with
+     vocabulary:
+     - `::StandardIGraphImplementationReport` `::makeGraphFn` fn [`eg-with-types-data`] -> `eg-with-typoes-graph`]
+     - `::StandardIGraphImplementationReport` `::schemaGraph` `schema-graph`]
+
   - `eg-with-types-graph` is an instance of the target graph initialized with `eg-data` + `eg-with-types-data`, created per the configuration of `report`.
   NOTE: these tests all have to do with traversal.
   "
@@ -478,7 +511,10 @@ Where
 (defn test-cardinality-1
   "Returns `report'` using a graph containing data from the README
   Where
-  - `report` is a report graph
+  -  `report` is a native-normal IGraph recording tests and their outcomes with
+     vocabulary:
+     - `::StandardIGraphImplementationReport` `::makeGraphFn` fn [`data`] -> `cardinality-1-graph`]
+     - `::StandardIGraphImplementationReport` `::schemaGraph` `schema-graph`]
   - `cardinality-1-graph` contains `cardinality-1-graph-data` plus maybe the contents
     of `schema-graph`
   - `schema-graph` is nil, or contains initialization data required by your igraph
@@ -552,7 +588,10 @@ Where
 (defn test-readme-eg-mutation-fn
   "Returns `report'`, given `eg-graph` and maybe `schema-graph` if needed, informed by `context`
   Where
-  - `report` is a graph containing test results
+  -  `report` is a native-normal IGraph recording tests and their outcomes with
+     vocabulary:
+     - `::StandardIGraphImplementationReport` `::makeGraphFn` fn [`data`] -> `eg-graph`]
+     - `::StandardIGraphImplementationReport` `::schemaGraph` `schema-graph`]
   - `eg-graph` contains `eg-data`, drawn from examples in the README.
   - `schema-graph` is nil, or contains initialization data required by your igraph
     implementation.
@@ -721,7 +760,11 @@ Where
 (defn test-readme-eg-set-operations
   "Returns `report'`, given `eg-graph` based on README examples
   Where
-  - `report` is a graph containing test results
+  -  `report` is a native-normal IGraph recording tests and their outcomes with
+     vocabulary:
+     - `::StandardIGraphImplementationReport` `::makeGraphFn` fn [`data`] -> `eg-graph`]
+     - `::StandardIGraphImplementationReport` `::schemaGraph` `schema-graph`]
+
   - `eg-graph` implements IGraphSet and contains `eg-data`, drawn from examples in the README.
   - `other-graph` implements IGraphSet and contains `other-eg-data`, drawn from examples in the README.
   "

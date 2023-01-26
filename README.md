@@ -1354,6 +1354,11 @@ examination....
                 ::ts/makeGraphFn make-test-graph])))
 ```
 
+Where:
+- the `::ts/makeGraphFn` property ranges over `fn [data] -> graph`
+- `data` is an appropriate argument to one of the add methods
+- `graph` is an instance of the IGraph impelementation to be tested
+
 Then we can apply a battery of standard tests, passing in the report
 and collecting test results.
 
@@ -1395,7 +1400,7 @@ In such cases you should provide a triple like this:
 (add report [::ts/StandardIGraphImplementationReport ::ts/schemaGraph <schema-graph>])
 ```
 
-Where <schema-graph> contains a graph with just the schema
+Where `schema-graph` contains a graph with just the schema
 content. Various tests will use this to filter out this stuff when
 comparing test results to canonical data.
 

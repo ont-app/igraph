@@ -44,5 +44,5 @@ uberjar:
 install:
 	clojure -T:build install
 
-deploy:
+deploy: uberjar
 	clojure -T:build deploy
