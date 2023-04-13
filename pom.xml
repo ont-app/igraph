@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <description>Defines protocols which aim to provide a general interface to a variety of graph-based representations</description>
+  <url>https://github.com/ont-app/igraph</url>
+  <licenses>
+    <license>
+      <name>Eclipse Public License</name>
+      <url>http://www.eclipse.org/legal/epl-v10.html</url>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <name>Eric D. Scott</name>
+    </developer>
+  </developers>
+  <scm>
+    <url>https://github.com/ont-app/igraph</url>
+    <connection>scm:git:git://github.com/ont-app/igraph.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/ont-app/igraph.git</developerConnection>
+    <tag>HEAD</tag>
+    <!-- NOTE THAT THE TAG CAN BE A GIT HASH -->
+  </scm>
+</project>
