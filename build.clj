@@ -9,7 +9,7 @@
 
 (def lib 'ont-app/igraph)
 
-(def version "0.2.1")
+(def version "0.2.2-SNAPSHOT")
 
 (defn validate-deps
   "Throws an `ex-info` of type `::invalid-deps`, or returns `opts` unchanged"
