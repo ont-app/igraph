@@ -1,7 +1,10 @@
 (ns ^{:author "Eric D. Scott",
       :doc "Abstractions over a graph object, intended to sit alongside the 
-other basic clojure data structures such as maps, vectors and sets.
-"}
+other basic clojure data structures such as maps, vectors and sets."
+      :vann/preferredNamespacePrefix "igraph"
+      :vann/preferredNamespaceUri "http://rdf.naturallexicon.org/ont-app/igraph#"
+      :dc/description "Abstractions over a Clojure graph object, intended to sit alongside the other basic clojure data structures such as maps, vectors and sets."
+      :dc/creator "Eric D. Scott"}
     ont-app.igraph.core
   (:require [clojure.pprint :as pp]
             [clojure.set :as set]
