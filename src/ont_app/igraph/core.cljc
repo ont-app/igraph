@@ -1,16 +1,16 @@
 (ns ^{:author "Eric D. Scott",
-      :doc "Abstractions over a graph object, intended to sit alongside the 
-other basic clojure data structures such as maps, vectors and sets."
+      :doc "Abstractions over a graph object, intended to sit alongside the other basic clojure data structures such as maps, vectors and sets."
       :vann/preferredNamespacePrefix "igraph"
       :vann/preferredNamespaceUri "http://rdf.naturallexicon.org/ont-app/igraph#"
       :dc/description "Abstractions over a Clojure graph object, intended to sit alongside the other basic clojure data structures such as maps, vectors and sets."
       :dc/creator "Eric D. Scott"}
     ont-app.igraph.core
-  (:require [clojure.pprint :as pp]
+  (:require 
             [clojure.set :as set]
             [clojure.spec.alpha :as spec]
-            [clojure.string :as str]
             #?(:clj [clojure.java.io :as io])
+            #?(:clj [clojure.pprint :as pp])
+            #?(:clj [clojure.string :as str])
             ))
 
 ;; FUN WITH READER MACROS
@@ -19,9 +19,9 @@ other basic clojure data structures such as maps, vectors and sets."
    (enable-console-print!)
    )
 
-#?(:cljs
-   (defn on-js-reload [] )
-   )
+;; #?(:cljs
+;;    (defn on-js-reload [] )
+;;    )
 
 (declare normal-form)
 #?(:clj
@@ -48,11 +48,11 @@ NOTE: Anything that would choke the reader on slurp should be removed
 (declare add)
 #?(:clj
    (defn read-from-file 
-     "returns `g` with the contents of `path` added
-Where
-  - `g` implements IGraph
-  - `path` is an edn file containing a normal-form representation of some graph,
-     typically the output of save-to-file."
+     "Returns `g` with the contents of `path` added.
+  - Where
+    - `g` implements IGraph
+    - `path` is an edn file containing a normal-form representation of some graph,
+       typically the output of save-to-file."
      [g path]
      (add g (read-string (slurp (io/as-file path))))
      ))
@@ -60,20 +60,20 @@ Where
 ;; No reader macros below this point
 
 (defprotocol IGraph
-  "An abstraction for S-P-O graphs"
+  "An abstraction for S-P-O graphs."
 
   ;;;;;;;;;;;;;;;;;;;;
   ;; ACCESS FUNCTIONS
   ;;;;;;;;;;;;;;;;;;;;
  
-  (normal-form [g] "Returns {`s` {`p` #{`o`...}...}...}
+  (normal-form [g] "Returns {`s` {`p` #{`o`...}...}...}.
 Where 
 - `s` is the subject of a triple := [`s` `p` `o`] in `g`
 - `p` is predicate of same
 - `o` is the object of same
 ")
   (subjects [g]
-    "Returns (`s`...) for `g`
+    "Returns (`s`...) for `g`.
 Where 
 - `s` is a subject in one or more triples in `g`
 - `g` is a graph.
@@ -97,7 +97,7 @@ Where
 "
     )
   (ask [g s p o]
-    "Returns truthy value iff [`s` `p` `o`] appears in `g`
+    "Returns truthy value iff [`s` `p` `o`] appears in `g`.
 Where
 - `g` is a graph
 - `s` is subject of some triples in `g`
@@ -106,7 +106,7 @@ Where
 "
     )
   (query [g q]
-    "Returns #{`binding` ...} for query spec `q` applied to `g`
+    "Returns #{`binding` ...} for query spec `q` applied to `g`.
 Where
 - `binding` := {`var` `value`, ...}
 - `q` is a query specification suitable for the native format of `g`
@@ -117,9 +117,8 @@ Where
     )
   ;; for IFn
   (invoke [g] [g s] [g s p] [g s p o]
-    "Applies `g` as a function to the rest of its arguments, representing 
-   triples [`s` `p` `o`] in `g` respectively. `p` may optionally be 
-   a traversal function (See `traverse` docs)
+    "Applies `g` as a function to the rest of its arguments, representing triples [`s` `p` `o`] in `g` respectively.
+Arg `p` may optionally be a traversal function (See `traverse` docs).
 - (g) -> {`s` {`p` #{`o`...}...}...} ;; = (normal-form `g`)
 - (g s) -> {`p` #{`o`...}, ...} ;; = (get-p-o `g`)
 - (g s p) -> #{`o` ...} ;; = (match-or-traverse g s p)
@@ -127,7 +126,7 @@ Where
 ")
   ;; mutability
   (mutability [g]
-    "Returns one of ::read-only ::immutable ::mutable ::accumulate-only"
+    "Returns one of ::read-only ::immutable ::mutable ::accumulate-only."
     )
   )
 
@@ -183,7 +182,7 @@ NOTE: see Datomic documentation for the 'add' operation for details
 "
     )
   (retract [g to-retract]
-    "Returns `g` with `comm` reset to head
+    "Returns `g` with `comm` reset to head.
 Side-effect:  `to-retract` retracted from `comm`
 Throws an exception if (mutability g) != ::accumulate-only.
 Where
@@ -198,10 +197,10 @@ NOTE: see Datomic documentation for details
 (defprotocol IGraphSet
   "Basic set operations between graphs."
   (union [g1 g2]
-    "Returns an IGraph whose normal form contains all triples from g1 and g2"
+    "Returns an IGraph whose normal form contains all triples from g1 and g2."
     )
   (intersection [g1 g2]
-    "Returns an IGraph whose normal form contains all and only statements shared by both g1 and g2"
+    "Returns an IGraph whose normal form contains all and only statements shared by both g1 and g2."
     )
   (difference [g1 g2]
     "Returns an IGraph whose normal form contains all statements in g1 not present in g2."
@@ -232,7 +231,7 @@ NOTE: see Datomic documentation for details
                                     :normal-form ::normal-form))
         
 (defn triples-format 
-  "Returns the value of (:triples-format (meta `triples-spec`)) or one of #{:vector :vector-of-vectors :normal-form `type`} inferred from the shape of `triples-spec`
+  "Returns the value of (:triples-format (meta `triples-spec`)) or one of #{:vector :vector-of-vectors :normal-form `type`} inferred from the shape of `triples-spec`.
   Where
   -   `args` := [`g` `triples-spec`],  arguments to a method add or remove from graph
   -   `g` is a graph
@@ -250,8 +249,8 @@ NOTE: see Datomic documentation for details
           (throw (ex-info "Invalid triples format"
                           (spec/explain-data ::triples-format triples-spec)))
           ;; else we're good
-          (let [[format _value_] conform]
-            format)))))
+          (let [[format' _value_] conform]
+            format')))))
 
 (spec/fdef triples-format
   :ret #{:vector-of-vectors
@@ -261,7 +260,7 @@ NOTE: see Datomic documentation for details
 
 
 (defmulti add-to-graph
-  "Returns `g`, with `to-add` added
+  "Returns `g`, with `to-add` added.
   Where
   -   `g` is a Graph
   -   `to-add` is interpetable as a set of triples
@@ -284,8 +283,7 @@ NOTE: see Datomic documentation for details
                             :vector-of-vectors ::vector-of-underspecified))
 
 (defn triples-removal-format
-  "Returns a keyword describing the format of `triples-spec` for removing a
-  set of triples from a graph.
+  "Returns a keyword describing the format of `triples-spec` for removing a set of triples from a graph.
   "
   [triples-spec]
   (or (::triples-format (meta triples-spec))
@@ -294,13 +292,13 @@ NOTE: see Datomic documentation for details
           (throw (ex-info "Invalid triples format"
                           (spec/explain-data ::removal-format triples-spec)))
           ;; else we're good
-          (let [[format value] conform]
-            (if (= format :triples-format)
+          (let [[format' value] conform]
+            (if (= format' :triples-format)
               ;; value is the kind of triples format
-              (let [[triples-format _] value]
-                triples-format)
+              (let [[triples-format' _] value]
+                triples-format')
               ;;else :underspecifed
-              format))))))
+              format'))))))
 
 (spec/fdef triples-removal-format
   :ret #{:vector-of-vectors
@@ -309,7 +307,7 @@ NOTE: see Datomic documentation for details
          :underspecified-triple})
 
 (defmulti remove-from-graph
-  "Returns `g`, with `to-remove` removed
+  "Returns `g`, with `to-remove` removed.
   Where
   -   `g` is a Graph
   -   `to-remove` is interpetable as a set of triples
@@ -321,7 +319,7 @@ NOTE: see Datomic documentation for details
 ;;; Traversal
 ;;;;;;;;;;;;;;;;
 (defn traverse 
-  "Returns `acc` acquired by applying `traversal` to `g` starting with `queue`, informed by `context`
+  "Returns `acc` acquired by applying `traversal` to `g` starting with `queue`, informed by `context`.
   Where
   -   `acc` is an arbitrary clojure 'accumulator' object (similar to a
       reduce function). Default is `[]`.
@@ -426,13 +424,12 @@ NOTE: see Datomic documentation for details
      (reduce conj (rest queue) (g (first queue) p))]))
 
 (defn traverse-link
-  "Returns traversal function (fn [g context, acc queue]...)
-    -> [context, acc', queue'], following one `p` in `g`
-  Where
-  -   `acc` is a set
-  -   `queue` := [`node` ...], nodes to visit in traversal
-  -   `p` is a predicate in `g`
-  -   `g` is a graph
+  "Returns traversal function (fn [g context, acc queue]...) -> [context, acc', queue'], following one `p` in `g`.
+  - Where
+    -   `acc` is a set
+    -   `queue` := [`node` ...], nodes to visit in traversal
+    -   `p` is a predicate in `g`
+    -   `g` is a graph
 
   NOTE: typically used as one component in a traversal path
 "
@@ -449,8 +446,7 @@ NOTE: see Datomic documentation for details
        (rest queue)])))
 
 (defn maybe-traverse-link 
-  "Returns traversal function (fn [g context, acc queue]...)
-    -> [context, acc', queue'], 
+  "Returns traversal function (fn [g context, acc queue]...) -> [context, acc', queue'].
   Where
   -   `acc'` includes `node` and and as many `o`s as are linked from `node`
        by `p` in `g` 
@@ -471,8 +467,7 @@ NOTE: see Datomic documentation for details
        (rest queue)])))
 
 (defn traverse-or 
-  "Returns traversal function (fn [g context, acc queue]...)
-    -> [context, acc', queue'], for `ps`
+  "Returns traversal function (fn [g context, acc queue]...) -> [context, acc', queue'], for `ps`.
   Where
   -   `acc'` includes `node` and and as many `o`s as are linked from `node`
        by `p1` | `p2` | ...  in `g` 
@@ -498,7 +493,7 @@ NOTE: see Datomic documentation for details
 
 
 (defn t-comp 
-  "Returns a traversal function composed of elements specified in `comp-spec`
+  "Returns a traversal function composed of elements specified in `comp-spec`.
 Where
   - `comp-spec` := {:path [`spec-element`, ...]
                    `spec-element` {:fn `traversal-fn`
@@ -609,7 +604,7 @@ An inferred 'uncle' relation.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- match-or-traverse-tag 
-  "Returns :traverse if `p` is a function, else :match
+  "Returns :traverse if `p` is a function, else :match.
 Informs p-dispatcher
 "
   [p]
@@ -627,7 +622,7 @@ Informs p-dispatcher
    (match-or-traverse-tag p)))
 
 (defmulti match-or-traverse
-  "Returns values appropriate for (g s p) or (g s p o) invocations
+  "Returns values appropriate for (g s p) or (g s p o) invocations.
   Where
   -   `o` is an object in `g`
   -   `s` is a subject in `g`
@@ -653,7 +648,7 @@ Informs p-dispatcher
     }
    (declare unique)
    (let [seek-o (fn seek-o [_context_ acc]
-                  (clojure.set/intersection acc #{o}))
+                  (set/intersection acc #{o}))
          ]
          (unique (traverse g p {:seek seek-o} #{} [s])))))
 
@@ -680,7 +675,7 @@ Informs p-dispatcher
     only one object.
   "
   ([coll on-ambiguity]
-   (if (seq coll)
+   (when (seq coll)
      (if (> (count coll) 1)
        (on-ambiguity coll)
        (first coll))))
@@ -693,7 +688,7 @@ Informs p-dispatcher
 
 ;; Inverse of normalize-flat-description
 (defn flatten-description 
-  "Returns `p-o` description with singletons broken out into scalars
+  "Returns `p-o` description with singletons broken out into scalars.
 Where
   - `p-o` := {`p` #{`o`}, ...}, normal form at 'description' level of a graph.
 "
@@ -709,7 +704,7 @@ Where
 
 ^{:inverse-of flatten-description}
 (defn normalize-flat-description
-  "Returns a normalized p-o description of `m`
+  "Returns a normalized p-o description of `m`.
   Where
   -   `m` is a plain clojure map"
   [m]
@@ -723,7 +718,7 @@ Where
     (reduce-kv maybe-setify {} m)))
 
 (defn assert-unique-fn
-  "Returns `g`', replacing any existing [s p *] with [s p o] per `context`
+  "Returns `g`', replacing any existing [s p *] with [s p o] per `context`.
   Where
   - `g` is a graph
   - `context` := m s.t. (keys m) = #{:add-fn :subtrct-fn}
@@ -738,21 +733,21 @@ Where
              [s p o]))))
 
 (def assert-unique
-  "fn [g s p o] -> g', asserting a unique triple in immutable graph.
+  "Fn [g s p o] -> g', asserting a unique triple in immutable graph.
   - Wrapper around `assert-unique-fn`"
   (partial assert-unique-fn {:add-fn add :subtract-fn subtract}))
 (def assert-unique!
-  "fn [g s p o] -> g', asserting a unique triple in mutable graph.
+  "Fn [g s p o] -> g', asserting a unique triple in mutable graph.
   - Wrapper around `assert-unique-fn`"
   (partial assert-unique-fn {:add-fn add! :subtract-fn subtract!}))
 
 (def claim-unique
-    "fn [g s p o] -> g', asserting a unique triple in an accumulate-only graph .
+    "Fn [g s p o] -> g', asserting a unique triple in an accumulate-only graph.
   - Wrapper around `assert-unique-fn`"
   (partial assert-unique-fn {:add-fn claim :subtract-fn retract}))
 
 (defn reduce-spo 
-  "Returns `acc'` s.t. (f acc s p o) -> `acc'` for every triple in `g`
+  "Returns `acc'` s.t. (f acc s p o) -> `acc'` for every triple in `g`.
 Where
   - `f` := (fn [acc s p o] -> `acc'`
   - `acc` is any value, a reduction accumlator

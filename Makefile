@@ -1,7 +1,8 @@
 
-## Update dependencies as needed....
-outdated:
-	clojure -M:outdated
+ifneq ("$(wildcard ~/.clojure/Makefile)","")
+## Put stuff that references `~/.clojure/deps.edn aiases in ~/.clojure/Makefile...
+include ~/.clojure/Makefile
+endif
 
 ## Testing ....
 .PHONY: test-jvm
@@ -14,28 +15,13 @@ test-js:
 
 .PHONY: test-node
 test-node:
-	shadow-cljs compile node-test
+	npx shadow-cljs compile node-test
 
 .PHONY: clean-all
 clean-all:
 	clojure -T:build clean :include-caches? true
 
 test-all: clean-all test-jvm test-js test-node
-
-## Style ....
-kondo:
-	clojure -M:kondo --lint src
-
-## Security ...
-### assumes that nvd-clojure/nvd-clojure tool has been installed
-### see also https://github.com/rm-hull/nvd-clojure
-nvd:
-	clojure -J-Dclojure.main.report=stderr -Tnvd nvd.task/check :classpath \"$(shell clojure -Spath)\"
-
-
-## Generate documentation ...
-codox:
-	clojure -X:codox
 
 ## Publishing...
 uberjar:

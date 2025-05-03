@@ -1,12 +1,8 @@
 {
  :paths ["src" "resources"]
  :deps {
-        org.clojure/clojure {:mvn/version "1.11.1"}
-        org.clojure/clojurescript {:mvn/version "1.11.60"
-                                   :exclusions [org.msgpack/msgpack]
-                                   ;; ... per nvd warning CVE-2022-41719
-                                   }
-        }
+        org.clojure/clojure {:mvn/version "1.12.0"}
+        org.clojure/clojurescript {:mvn/version "1.12.38"}}
  :aliases {
            ;;;;;;;;;;;;;;;;
            ;; JVM SUPPORT
@@ -15,24 +11,18 @@
            ;; Informs :build alias, below
            :test {
                   :extra-paths ["test"]
-                  :extra-deps {
-                               org.clojure/test.check {:mvn/version "1.1.1"}
+                  :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
                                io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
-                                                                     :git/sha "dfb30dd"}
-                               }
-                  }
+                                                                     :git/sha "dfb30dd"}}}
            ;; Building utilities
            ;; invoke with -T:build
            ;; for help: clojure -A:deps -T:build help/doc
            :build {
                    :deps {
                           io.github.seancorfield/build-clj {:git/tag "v0.9.2"
-                                                            :git/sha "9c9f078"
-                                                            }                          
-                          org.clojure/tools.deps {:mvn/version "0.18.1335"}
-                          }
-                   :ns-default build
-                   }
+                                                            :git/sha "9c9f078"}
+                          org.clojure/tools.deps {:mvn/version "0.23.1512"}}
+                   :ns-default build}
 
            ;;;;;;;;;;;;;;;;;;;;;;;;;;
            ;; CLOJURESCRIPT SUPPORT
@@ -41,21 +31,22 @@
            ;; Test cljs version with `clojure -M:test-cljs`
            ;; Get help with clojure -M:test-cljs --help
            ;; See also https://github.com/Olical/cljs-test-runner
-           :test-cljs {
-                       :extra-deps {olical/cljs-test-runner {:mvn/version "3.8.0"}}
+           :test-cljs {:extra-deps {olical/cljs-test-runner {:mvn/version "3.8.1"}}
                        :extra-paths ["test"]
-                       :main-opts ["-m" "cljs-test-runner.main"]
-                       }
+                       :main-opts ["-m" "cljs-test-runner.main"]}
 
            ;; SHADOW-CLJS SUPPORT
            ;; Alias referenced in shadow-cljs.edn
-           :shadow {
-                    :extra-deps {thheller/shadow-cljs {:mvn/version "2.22.10"}}
-                    :extra-paths ["test"]
-                    }
+           :shadow {:extra-deps {thheller/shadow-cljs {:mvn/version "2.22.10"}}
+                    :extra-paths ["test"]}
+           ;;;;;;;;;;;;;;;
+           ;; NVD support
+           ;; There are a lot of spurious NVD warnings associated with ClojureScript
+           ;; This will leave ClojureScript out of the NVD path:
+           ;; clojure -Tnvd nvd.task/check :classpath \""$(clojure -Spath -A:backend-only)\"""
+           ;;;;;;;;;;;;;;;
+           :backend-only {:deps {org.clojure/clojure {:mvn/version "1.12.0"}}}
+
            } ;; aliases
  }
-;; NVD notes
-;; CVE-2023-0247 is flagged for clojurescript-1.11.60.jar, but seems to pertain to a go repo
-;; CVE-2022-45688 jackson-core-2.8.7.jar. Excluding this breaks tests.
-;; linked to https://github.com/stleary/JSON-java/issues/708
+

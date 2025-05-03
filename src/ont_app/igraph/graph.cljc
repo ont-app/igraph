@@ -32,16 +32,13 @@ The core type declaration:
   (intersection [g1 g2] (get-intersection g1 g2))
   (difference [g1 g2] (remove-from-graph g1 (g2)))
   )
-```
-"}
+```"}
     ont-app.igraph.graph
   (:require [clojure.set :as set]
-            [clojure.spec.alpha :as spec]
             [ont-app.igraph.core
              :as igraph
              :refer
-             [
-              add
+             [add
               add-to-graph
               get-o
               get-p-o
@@ -52,10 +49,7 @@ The core type declaration:
               subjects
               traverse
               triples-format
-              unique
-              ]
-             ]
-            ))
+              unique]]))
 
 (declare query-graph) ;; defined below
 (declare get-intersection)
@@ -90,7 +84,7 @@ The core type declaration:
   )
 
 (defn get-contents 
-  "Returns (.contents g) or (.-contents g) appropriate to clj/cljs"
+  "Returns (.contents g) or (.-contents g) appropriate to clj/cljs."
   [^Graph g]
   #?(:clj
      (.contents g)
@@ -107,7 +101,7 @@ The core type declaration:
   
   
 (defn make-graph
-  "Returns `graph`, intialized per optional `contents`
+  "Returns `graph`, intialized per optional `contents`.
   Where
   -   `graph` is an instance of the `Graph` type, which implments `IGraph`, `Ifn` and `ISet`
   -   `contents` is a normal-form representation of initial contents.
@@ -122,7 +116,7 @@ The core type declaration:
 
 
 (defn vector-of-triples 
-  "Returns (g) as [[`s` `p` `o`]...]"
+  "Returns (g) as [[`s` `p` `o`]...]."
   [g]
   (with-meta
     (reduce-spo
@@ -185,8 +179,7 @@ The core type declaration:
 
 
 (defn- -dissoc-in 
-  "removes the last key in `path` from its parent in `map-or-set`, removing
-    any empty containers along the way.
+  "Removes the last key in `path` from its parent in `map-or-set`, removing any empty containers along the way.
 Where 
   - `map-or-set` is typically a sub-tree of graph contents
   - `path` := [`key` ...]
@@ -194,26 +187,24 @@ Note: typically used to inform removal of nodes in a graph, where `key` is
   a subject, predicate or object
 "
   [map-or-set path]
-  (let [key (first path)
-        ]
+  (let [key' (first path)]
     (assert (seq path))
     (if (= (count path) 1)
       (if (set? map-or-set)
-        (disj map-or-set key)
+        (disj map-or-set key')
         ;; else it's a map
-        (dissoc map-or-set key))
+        (dissoc map-or-set key'))
       ;; else there's more path
-      (let [dissociated (-dissoc-in (get map-or-set key)
-                                    (rest path))
-            ]
+      (let [dissociated (-dissoc-in (get map-or-set key')
+                                    (rest path))]
         (if (empty? dissociated)
-          (dissoc  map-or-set key)
-          (assoc map-or-set key
+          (dissoc  map-or-set key')
+          (assoc map-or-set key'
                  dissociated))))))
 
 
 (defn- shared-keys 
-  "Returns {`shared key`...} for `m1` and `m2`
+  "Returns {`shared key`...} for `m1` and `m2`.
 Where
   - `shared key` is a key in both maps `m1` and `m2`
 "
@@ -223,23 +214,20 @@ Where
 
 (defmethod remove-from-graph [Graph :normal-form] [g to-remove]
   (letfn [(dissoc-in [shared-path acc value]
-            (let [shared-path (conj shared-path value)
-                  ]
+            (let [shared-path (conj shared-path value)]
               (-dissoc-in acc shared-path)))
           
           (dissoc-shared-keys [shared-path acc next-key]
             (let [shared-path (conj shared-path next-key)
                   v1 (get-in (g) shared-path)
-                  v2 (get-in to-remove shared-path)
-                  ]
+                  v2 (get-in to-remove shared-path)]
               (if (set? v1)
                 (reduce (partial dissoc-in shared-path)
                         acc
                         (set/intersection v1 v2))
                 (reduce (partial dissoc-shared-keys shared-path)
                         acc
-                        (shared-keys v1 v2)))))
-          ]
+                        (shared-keys v1 v2)))))]
     (if (empty? to-remove)
       g
       (make-graph
@@ -265,8 +253,7 @@ Where
                            ;; else this specifies one or more triples...
                            (reduce (partial remove-triple (first v))
                                    acc
-                                   (partition 2 (rest v)))))
-        ]
+                                   (partition 2 (rest v)))))]
     (if (empty? triples)
       g
       ;; else
@@ -295,8 +282,7 @@ Where
                              to-remove)
                  ;; else this is a long vector
                  (let [diminish-contents (fn [s acc [p o]]
-                                           (-dissoc-in acc [s p o]))
-                       ]
+                                           (-dissoc-in acc [s p o]))]
                    (reduce (partial diminish-contents (first to-remove))
                            (get-contents g)
                            (partition 2 (rest to-remove))))))))
@@ -304,35 +290,33 @@ Where
 
 (defmethod remove-from-graph [Graph :underspecified-triple]
   [g to-remove]
-  ;; Underspecified-vector is a distinction without a difference at this point
+  ;; Underspecified-vector is a distinction without a difference at present
   (let [f (get-method remove-from-graph [Graph :vector])]
     (f g to-remove)))
 
 
 (defn- get-intersection
-  "Returns a new graph whose triples are shared between `g1` and `g2`
+  "Returns a new graph whose triples are shared between `g1` and `g2`.
   Where
   -   `g1` and `g2` both implement IGraph.
   "
   [g1 g2]
   (let [collect-p
         (fn [s acc p]
-          (let [_intersection
+          (let [intersection'
                 (set/intersection
                  (set (get-in (g1) [s p]))
-                 (set (get-in (g2) [s p])))
-                ]
-            (if (empty? _intersection)
+                 (set (get-in (g2) [s p])))]
+            (if (empty? intersection')
               acc
               (assoc-in acc
                         [s p]
-                        _intersection))))
+                        intersection'))))
         collect-s
         (fn [acc s]
           (reduce (partial collect-p s)
                   acc
-                  (shared-keys (g1 s) (g2 s))))
-        ]
+                  (shared-keys (g1 s) (g2 s))))]
     (make-graph
      :contents (reduce collect-s {} (shared-keys (g1) (g2))))))
 
@@ -342,8 +326,8 @@ Where
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                  
 (defn- kw-starts-with-?
-  "Returns true iff `spec` is a symbol whose name
-  starts with ?. Default for query-var? parameter
+  "Returns true iff `spec` is a symbol whose name starts with ?.
+  Default for query-var? parameter.
   "
   [spec]
   (and (keyword? spec)
@@ -351,8 +335,7 @@ Where
 
 ;; ^reduce-fn
 (defn- -collect-o-match 
-  "
-  Adds new `match` to `matches` for `next-o` in `context`
+  "Adds new `match` to `matches` for `next-o` in `context`.
   Where
   -   `match` := {`var` `o`, ... }, as set of variable bindings
   -   `matches` := [`match`, ...]
@@ -388,17 +371,15 @@ Where
         collect-bindings (fn [b spo]
                            ;; add value of s|p|o if it's a var
                            ;; spo is one of #{:s :p :o}
-                           (if-let [var (unique (context spo :bound-to))]
-                             (assoc b var (unique (context spo :value)))
-                             b))
-        
-        ]
+                           (if-let [var' (unique (context spo :bound-to))]
+                             (assoc b var' (unique (context spo :value)))
+                             b))]
     (conj matches (reduce collect-bindings {} [:s :p :o]))))
 
 
 ;; ^reduce-fn
 (defn- -collect-p-o-matches
-  "Returns `matches`' for `g` in `context` given `next-p`
+  "Returns `matches`' for `g` in `context` given `next-p`.
   Where
   -   `matches` := #{`match` ...}
   -   `match` := {`var` `value`, ...}
@@ -430,9 +411,7 @@ Where
       on the upstream query context.
   "
   [^Graph g ^Graph context matches next-p]
-  {:pre [(set? matches)
-         ]
-   }
+  {:pre [(set? matches)]}
   (let [o-candidates (context :o :candidate)
         ;; ... bound to the <o` in previous clauses, or nil
         qualify-os (fn [os]
@@ -440,9 +419,7 @@ Where
                      ;; acquired in clauses upstream
                      (if o-candidates
                        (set/intersection o-candidates os)
-                       os))
-        ]
-
+                       os))]
     (if (fn? next-p)
       ;;traversal fn, match against the o's it acquires, modulo var bindings
       ;; from upstream
@@ -474,7 +451,7 @@ Where
                 
 
 (defn- -collect-s-p-o-matches
-  "Returns `matches` for `next-s` in `g`, given `context`
+  "Returns `matches` for `next-s` in `g`, given `context`.
   Where
   -   `matches` := [`match` ...]
   -   `next-s` is a subject matching the current clause in some query.
@@ -497,8 +474,7 @@ Where
         on whether `var` was bound upstream in the query context
   "
   [^Graph g ^Graph context matches next-s]  
-  {:pre [(set? matches)]
-   }
+  {:pre [(set? matches)]}
   (letfn [(qualify-ps
             [ps]
             ;; limits ps to specified candidates for p, if they exist
@@ -525,7 +501,7 @@ Where
 
 
 (defn- -query-clause-matches
-  "Returns `matches` for `clause` posed against `g` in `query-context`
+  "Returns `matches` for `clause` posed against `g` in `query-context`.
   Where
   -   `matches` := [`match` ...]
   -   `clause` :=[`s-spec` `p-spec` `o-spec`], a line from a simple query
@@ -543,22 +519,18 @@ Where
   "
   [^Graph g ^Graph query-context clause]
   {:pre [(map? query-context)
-         (= (count clause) 3)]
-   }
-  (let [
-        [s-spec p-spec o-spec] clause
+         (= (count clause) 3)]}
+  (let [[s-spec p-spec o-spec] clause
         query-var? (:query-var? query-context)
         candidates-for (fn [q-var]
                          ;; returns the set of values already bound
                          ;; to any var upstream. the current clause
                          ;; must bind to a subset of these
-                         (if-let [cs (-> query-context
+                         (when-let [cs (-> query-context
                                          :specified
                                          (q-var)
                                          (keys))]
                            (set cs)))
-
-        
         add-candidates (fn [c spo q-var]
                          ;; Updates context <c> s.t. spo *may* have a set of
                          ;; candidate bindings.
@@ -567,14 +539,12 @@ Where
                            (if (and candidates (seq candidates))
                              (add c {spo {:candidate candidates}})
                              c)))
-
         add-var-context (fn [c spo q-var]
                           ;; updates context <c> s.t. variable bindings
                           ;; for s p or o are accounted for
                           (-> c
                               (add [spo :bound-to q-var])
                               (add-candidates spo q-var)))
-        
         add-graph-element-context (fn [c spo element]
                                     ;; updates the context for the case
                                     ;; where s p or o is a graph element
@@ -583,8 +553,7 @@ Where
                                     (-> c
                                         (add [[spo :value element]
                                               [spo :candidate element]
-                                              ]
-                                             )))
+                                              ])))
         update-clause-context (fn [c spo spec]
                                 ;; updates the context appropriately
                                 ;; for either a variable or a graph element
@@ -595,14 +564,11 @@ Where
                                   
                                   (not (query-var? spec))
                                   (add-graph-element-context spo spec)))
-
         clause-context (-> (make-graph)
                            ;; Updates the context for s p and o
                            (update-clause-context :s s-spec)
                            (update-clause-context :p p-spec)
-                           (update-clause-context :o o-spec))
-        
-        ]
+                           (update-clause-context :o o-spec))]
     (reduce (partial -collect-s-p-o-matches
                      g
                      clause-context)
@@ -625,7 +591,7 @@ Where
               [s-spec]))))
 
 (defn- -collect-clause-match
-  "Returns [`match`...] for `context` and `match`
+  "Returns [`match`...] for `context` and `match`.
   Where
   -   `clause-state` := {:bindings `bindings` :shared-bound `shared-bound`}
         s.t. `bindings` membership is appropriately modified per `match`
@@ -652,9 +618,7 @@ Where
   [query-state clause-state match]
   {:pre [(map? query-state)
          (map? clause-state)
-         (map? match)
-         ]
-   }
+         (map? match)]}
   (assoc clause-state
          :bindings
          (set/union
@@ -677,7 +641,7 @@ Where
 
 
 (defn- -triplify-binding 
-  "Returns [[`var` `value` `binding`]...] for `binding`, given `query-var?`
+  "Returns [[`var` `value` `binding`]...] for `binding`, given `query-var?`.
 Where
   -   `binding` := {`var` `value` ...}
   -   `query-var?` := (fn [var] ...) -> true iff `var` is a variable.
@@ -686,18 +650,16 @@ Where
   NOTE: this is typically used to populate the 'specified' graph in 
   a query-state, which informs the matching process downstream.
   "
-  [query-var? binding]
-  {:pre [(map? binding)]
-   }
-  (let [triplify-var (fn [binding qvar]
-                       [qvar (qvar binding) binding])
-        ]
-    (vec (map (partial triplify-var binding)
-              (filter query-var? (keys binding))))))
+  [query-var? binding']
+  {:pre [(map? binding')]}
+  (let [triplify-var (fn [binding' qvar]
+                       [qvar (qvar binding') binding'])]
+    (vec (map (partial triplify-var binding')
+              (filter query-var? (keys binding'))))))
 
 ;; ^reduce-fn
 (defn- -collect-clause-matches
-  "Returns `query-state` modified for matches to `clause` in `g`
+  "Returns `query-state` modified for matches to `clause` in `g`.
   Where
   -   `query-state` := {:viable? ... :matches ... :specified ...}
          modified s.t. each match found for clause is joined with compatible
@@ -716,8 +678,7 @@ Where
   [^Graph g query-state next-clause]
   {:pre [(map? query-state)
          (vector? next-clause)
-         (= (count next-clause) 3)]
-   }
+         (= (count next-clause) 3)]}
 
   (if-not (:viable? query-state)
     query-state
@@ -735,13 +696,11 @@ Where
                                             normal-form
                                             keys))) 
                               #{})
-                          (set (filter query-var? next-clause)))
-           }
+                          (set (filter query-var? next-clause)))}
           clause-state 
           (reduce (partial -collect-clause-match query-state)
                   initial-clause-state
-                  (-query-clause-matches g query-state next-clause))
-          ]
+                  (-query-clause-matches g query-state next-clause))]
       (if-let [bindings (:bindings clause-state)]
         (assoc query-state
                :bindings bindings
@@ -752,11 +711,10 @@ Where
                                              (:bindings clause-state)))))
         (assoc query-state
                :viable? false
-               :bindings nil
-               )))))
+               :bindings nil)))))
 
 (defn query-graph
-  "Returns #{`binding`...} for `graph-pattern` applied to `g`
+  "Returns #{`binding`...} for `graph-pattern` applied to `g`.
   Where
   -   `g` is a Graph
   -   `graph-pattern` := [[`var-or-value` `var-or-value` `var-or-value`]...]
@@ -768,8 +726,7 @@ Where
   "
   ([^Graph g graph-pattern query-var?]
   {:pre [(vector? graph-pattern)
-         (vector? (graph-pattern 0))]
-   }
+         (vector? (graph-pattern 0))]}
   (or (:bindings
        (reduce (partial -collect-clause-matches g)
                {:viable? true
@@ -779,7 +736,6 @@ Where
       #{}))
   ([^Graph g graph-pattern]
    (query-graph g graph-pattern kw-starts-with-?)))
-
        
 (comment
   )
