@@ -1,18 +1,18 @@
 (ns ont-app.igraph.test-support
   "These are tests that should be applicable to implemenations of the IGraph protocols. Most examples are drawn from the README. After running tests, query-for-failures should be empty."
-  {
+  {:clj-kondo/config '{:linters {:unresolved-symbol {:level :off}
+                                 :redundant-let {:level :off}
+                                 }}
    ;; this metadata can be used by downstream libraries that rely on RDF URIs...
    :vann/preferredNamespacePrefix
    "igraph-test" ;; matches :: declarations directly
    :vann/preferredNamespaceUri
-   "http://rdf.naturallexicon.org/ont-app/igraph/igraph-test#"
-   }
+   "http://rdf.naturallexicon.org/ont-app/igraph/igraph-test#"}
   (:require
    [clojure.set]
    [clojure.spec.alpha :as spec]
    [ont-app.igraph.core :as igraph]
-   [ont-app.igraph.graph :as native-normal]
-   ))
+   [ont-app.igraph.graph :as native-normal]))
 
 ;; SPEX
 (spec/def ::report
@@ -21,23 +21,23 @@
 
 ;; FUN WITH READER MACROS
 (def cljc-LazySeq
-  "LazySeq type in clj(s)"
+  "LazySeq type in clj(s)."
   #?(:clj clojure.lang.LazySeq
      :cljs cljs.core/LazySeq))
 
 (def cljc-format
-  "The format function in clj(s)"
+  "The format function in clj(s)."
   #?(:clj clojure.core/format
      :cljs goog.string.format))
 
 ;; NO READER MACROS BELOW THIS POINT except in try/catch macros
 
 (def subClassOf*
-  "A traversal function. Transitive closure of subClassOf"
+  "A traversal function. Transitive closure of subClassOf."
   (igraph/transitive-closure :igraph-test/subClassOf))
 
 (defn sans-schema 
-  "Returns a native-normal graph with the contents of `g` minus `schema-graph`
+  "Returns a native-normal graph with the contents of `g` minus `schema-graph`.
   Where
   - `g` is the test graph implementing IGraph and containing test content
   - `schema` is a properly configured graph devoid of test content, or nil
@@ -53,7 +53,7 @@
                         :contents (igraph/normal-form schema-graph)))))
 
 (defn do-report! 
-  "Side-effect: Modifies `report` in include `desc`. Returns @report
+  "Side-effect: Modifies `report` in include `desc`; Returns @report.
 Where
 - `report` is an atom containing the report graph
 - `desc` is a normal-form description to be added to `report`"
@@ -63,7 +63,7 @@ Where
   @report)
 
 (defn do-assert-and-report!
-  "Modifies `report` with test results of `test-name` with `comment` from comparing `observed` to `expected`. Returns @report
+  "Modifies `report` with test results of `test-name` with `comment` from comparing `observed` to `expected`; Returns @report.
   Where
   - `report` is an atom containing the report graph
   - `test-name` is a KWI naming a test
@@ -72,33 +72,36 @@ Where
   - `expected` is the expected value of running the test.
   NOTE: if observed=expected, `test-name` will be of type ::Passed, else ::Failed.
   "
-  [report test-fn-name test-name comment observed expected]
+  [report test-fn-name test-name comment' observed expected]
   (if (= observed expected)
     (do-report! report
                 [test-name
                  :rdf/type ::Passed
                  ::inTest test-fn-name
-                 :rdfs/comment (str comment " as expected")])
+                 :rdfs/comment (str comment' " as expected")])
     ;; else
     (do-report! report
                 [test-name
                  :rdf/type ::Failed
                  ::inTest test-fn-name
-                 :rdfs/comment (str comment " not as expected")
+                 :rdfs/comment (str comment' " not as expected")
                  ::observed observed
                  ::expected expected])))
 
 (defn report-atom
+  "Returns an atom containg `g`, with a :validator to check for validity of `g` as a ::report.
+  - Where
+    - `g` is a native-normal graph containing the report.
+  "
   [g]
   (atom g :validator (fn [g] (spec/valid? ::report g))))
 
 (defn tap-value
-  "Returns `tap-val`
+  "Returns `tap-val`.
   Side-effect: tap>'s `tap-val` in map {:type `tap-type` :value `tap-val`"
   [tap-type tap-val]
   (tap> {:type tap-type
-         :value tap-val
-         })
+         :value tap-val})
   tap-val)
 
 (defn report-invalid-test-graph
@@ -129,9 +132,7 @@ Where
           ::inTest test-fn-var
           :rdfs/comment (cljc-format "Test graph for %s was nil in %s"
                                      content-var
-                                     test-fn-var
-                                     )
-          ]))
+                                     test-fn-var)]))
        ;; else the test graph exists
        (if #?(:clj (and protocol (not (satisfies? protocol test-graph)))
               :cljs false) ;; cljs doesn't do this well
@@ -149,7 +150,7 @@ Where
                        
                        ]))
          ;; else the graph satisfies. How's the content?
-         (if (not (= (igraph/normal-form (sans-schema test-graph schema-graph))
+         (when (not (= (igraph/normal-form (sans-schema test-graph schema-graph))
                      (deref content-var)))
            (tap-value
             ::FailedContentTest
@@ -162,12 +163,10 @@ Where
                                                     test-fn-var)
                          ::observed (igraph/normal-form (sans-schema test-graph schema-graph))
                          ::expected (deref content-var)
-                         ])))))
-     
-     )))
+                         ]))))))))
 
 
-(def eg-data "Initial data for the `eg` graph in the README"
+(def eg-data "Initial data for the `eg` graph in the README."
   {:igraph-test/john
    {:igraph-test/isa #{:igraph-test/person}, :igraph-test/likes #{:igraph-test/beef}},
    :igraph-test/mary
@@ -176,7 +175,7 @@ Where
 (def ^:private the igraph/unique)
 
 (defn test-readme-eg-access
-  "Returns `report'` for `report`, given `eg-graph`, possibly informed by `readme-schema-graph`
+  "Returns `report'` for `report`, given `eg-graph`, possibly informed by `readme-schema-graph`.
   Where
   -  `report` is a native-normal IGraph recording tests and their outcomes with
      vocabulary:
@@ -197,19 +196,17 @@ Where
    (let [make-graph (the (report ::StandardIGraphImplementationReport ::makeGraphFn))
          eg-graph (make-graph eg-data)
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
-         test-fn-var #'test-readme-eg-access
-         ]
+         test-fn-var #'test-readme-eg-access]
      (or
       (report-invalid-test-graph report 
                                  eg-graph
                                  :test-fn-var test-fn-var
                                  :protocol igraph/IGraph
                                  :content-var #'eg-data
-                                 :schema-graph schema-graph
-                                 )
+                                 :schema-graph schema-graph)
+      ;; ... either the report is invalid or it reports on a specific test failure...
       (let [report' (report-atom report)
-            assert-and-report! (partial do-assert-and-report! report' test-fn-var)
-            ]
+            assert-and-report! (partial do-assert-and-report! report' test-fn-var)]
          (assert-and-report!
           ::SansSchemaTest
           "eg-graph content after removing any schema"
@@ -311,14 +308,14 @@ Where
            ::igraph/immutable
            (assert-and-report!
             ::IGraphImmutableTest
-            "Whether eg-graph satisfies IGraphMutable"
+            "Whether eg-graph satisfies IGraphImmutable"
             (satisfies? igraph/IGraphImmutable eg-graph)
             true)
            
            ::igraph/mutable
            (assert-and-report!
             ::IGraphMutableTest
-            "Whether eg-graph satisfies IGraphAccumuOnly"
+            "Whether eg-graph satisfies IGraphMutable"
             (satisfies? igraph/IGraphMutable eg-graph)
             true)
            
@@ -329,14 +326,11 @@ Where
             (satisfies? igraph/IGraphAccumulateOnly eg-graph)
             true)
            
-           ::igraph/read-only nil
-           
-           ) ;; mutability cases
+           ::igraph/read-only nil) ;; end mutability cases
 
          ;; UTILITIES
          (letfn [(tally-triples [tally _s _p _o]
-                   (inc tally))
-                 ]
+                   (inc tally))]
            (assert-and-report!
             ::TallyTriplesTest
             "Tally-triples applied as a reduce-spo should count triples properly"
@@ -345,8 +339,7 @@ Where
                  (igraph/reduce-spo tally-triples 0 schema-graph)
                  0))
             4))
-         @report'
-         ) ;; let level 2
+         @report') ;; end second condition of 'or', reports on specific test failures
       ))))
 
 (def types-data
@@ -364,15 +357,15 @@ Where
    })
 
 (def eg-with-types-data
-  "Data to populate a test graph with the `eg-with-types` example graph in README"
+  "Data to populate a test graph with the `eg-with-types` example graph in README."
   (-> (native-normal/make-graph)
       (igraph/add eg-data)
       (igraph/add types-data)
       (igraph/normal-form)))
 
 (defn test-readme-eg-traversal
-  "Returns `report'` given `eg-with-types-graph`
-  where
+  "Returns `report'` given `eg-with-types-graph`.
+  Where
   -  `report` is a native-normal IGraph recording tests and their outcomes with
      vocabulary:
      - `::StandardIGraphImplementationReport` `::makeGraphFn` fn [`eg-with-types-data`] -> `eg-with-typoes-graph`]
@@ -387,8 +380,7 @@ Where
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          test-fn-var #'test-readme-eg-traversal
          report' (report-atom report)
-         assert-and-report! (partial do-assert-and-report! report' test-fn-var)
-         ]
+         assert-and-report! (partial do-assert-and-report! report' test-fn-var)]
      (or
       (report-invalid-test-graph report
                                  eg-with-types-graph
@@ -403,8 +395,7 @@ Where
        ::EgWithTypesGraphContentsTest
        "Whether contents of eg-with-types-graph argument to test-readme-eg-traversal are as expected"
        (igraph/normal-form (sans-schema eg-with-types-graph schema-graph))
-       eg-with-types-data
-       )
+       eg-with-types-data)
       
       (assert-and-report!
        ::subClassOf*MeatTest
@@ -437,7 +428,6 @@ Where
        #{:igraph-test/person :igraph-test/john :igraph-test/mary})
 
       (let [subsumed-by (igraph/traverse-or :igraph-test/isa :igraph-test/subClassOf)]
-        
         (assert-and-report!
          ::SubsumedByTestIsa
          "subsumed-by should merge isa and subClassOf. john isa person."
@@ -449,22 +439,20 @@ Where
          "Subsumed-by with meat should return its superclass food"
          (igraph/traverse eg-with-types-graph subsumed-by #{} [:igraph-test/meat])
          #{:igraph-test/food}
-         )
-        ) ;; let subsumed-by
+         )) ;; end let subsumed-by
 
       (let [instance-of (igraph/t-comp
                          [:igraph-test/isa
-                          (igraph/transitive-closure :igraph-test/subClassOf)])
-            ]
+                          (igraph/transitive-closure :igraph-test/subClassOf)])]
         (assert-and-report!
          ::InstanceOfTest
          "instance-of = isa/subclassOf*"
          (igraph/traverse eg-with-types-graph instance-of #{} [:igraph-test/john])
-         #{:igraph-test/person :igraph-test/thing})) ;; let instance-of
+         #{:igraph-test/person :igraph-test/thing})) ;; end let instance-of
 
       (assert-and-report!
        ::SubClassOf*AsPropertyWithOpenObjectTest
-       "Using subClassOf* as a property arg with open object should deliver all superclasses of beef"
+       "Using subClassOf* as a property arg with open object should deliver all superclasses of beef."
        (eg-with-types-graph :igraph-test/beef subClassOf*)
        #{:igraph-test/consumable :igraph-test/beef
                :igraph-test/meat
@@ -497,11 +485,11 @@ Where
                               (igraph/traverse-link :igraph-test/isa) 
                               [:igraph-test/john :igraph-test/mary]))
        (type []))
-      )) ;;cond
+      )) ;; end cond
     )))
 
 (def cardinality-1-graph-data
-  "Data to be loaded into the test graph for cardinality-1 examples in README"
+  "Data to be loaded into the test graph for cardinality-1 examples in README."
   (-> (native-normal/make-graph :contents eg-data)
       (igraph/add
        {:igraph-test/john {:igraph-test/likes #{:igraph-test/beer}
@@ -509,7 +497,7 @@ Where
       (igraph/normal-form)))
 
 (defn test-cardinality-1
-  "Returns `report'` using a graph containing data from the README
+  "Returns `report'` using a graph containing data from the README.
   Where
   -  `report` is a native-normal IGraph recording tests and their outcomes with
      vocabulary:
@@ -586,7 +574,7 @@ Where
      )))
 
 (defn test-readme-eg-mutation-fn
-  "Returns `report'`, given `eg-graph` and maybe `schema-graph` if needed, informed by `context`
+  "Returns `report'`, given `eg-graph` and maybe `schema-graph` if needed, informed by `context`.
   Where
   -  `report` is a native-normal IGraph recording tests and their outcomes with
      vocabulary:
@@ -692,17 +680,16 @@ Where
 
 
 (defn test-readme-eg-mutation-dispatch
-  "Returns the mutability of a graph made according to the report's ::makeGraphFn"
+  "Returns the mutability of a graph made according to the report's ::makeGraphFn."
   [report]
   (let [make-graph (the (report ::StandardIGraphImplementationReport ::makeGraphFn))
         ]
     (-> eg-data
         (make-graph)
-        (igraph/mutability))
-  ))
+        (igraph/mutability))))
 
 (defmulti test-readme-eg-mutation
-  "Returns `report`', modified per tests on mutability, dispatched on the mutability attribute of the graph under examination."
+  "Returns `report`', modified per tests on mutability, dispatched on `test-readme-eg-mutation-dispatch`."
   test-readme-eg-mutation-dispatch)
 
 (defmethod test-readme-eg-mutation ::igraph/immutable
@@ -714,8 +701,7 @@ Where
      :assert-unique-fn igraph/assert-unique
      :test-fn-var #'test-readme-eg-mutation
      }
-    report
-    )))
+    report)))
   
 (defmethod test-readme-eg-mutation ::igraph/mutable
   ;; "Returns report for mutations under a mutable igraph"
@@ -725,10 +711,8 @@ Where
      :add-fn igraph/add!
      :subtract-fn igraph/subtract!
      :assert-unique-fn igraph/assert-unique!
-     :test-fn-var #'test-readme-eg-mutation
-     }
-    report
-    )))
+     :test-fn-var #'test-readme-eg-mutation}
+    report)))
 
 (defmethod test-readme-eg-mutation  ::igraph/accumulate-only 
   ;; "Returns report for mutations under an accumulate-only igraph"
@@ -738,10 +722,8 @@ Where
      :add-fn igraph/claim
      :subtract-fn igraph/retract
      :assert-unique-fn igraph/claim-unique
-     :test-fn-var #'test-readme-eg-mutation
-     }
-    report
-    )))
+     :test-fn-var #'test-readme-eg-mutation}
+    report)))
 
 (defmethod test-readme-eg-mutation  ::igraph/read-only
   ;; "Returns report for mutations under an accumulate-only igraph"
@@ -751,14 +733,15 @@ Where
 
 
 
-(def other-eg-data "Contents of the `other-eg` graph in the README"
+(def other-eg-data
+  "Contents of the `other-eg` graph in the README."
   {:igraph-test/mary
    {:igraph-test/isa #{:igraph-test/person}, :igraph-test/likes #{:igraph-test/pork}},
    :igraph-test/waldo
    {:igraph-test/isa #{:igraph-test/person}, :igraph-test/likes #{:igraph-test/beer}}})
 
 (defn test-readme-eg-set-operations
-  "Returns `report'`, given `eg-graph` based on README examples
+  "Returns `report'`, given `eg-graph` based on README examples.
   Where
   -  `report` is a native-normal IGraph recording tests and their outcomes with
      vocabulary:
@@ -775,8 +758,7 @@ Where
          schema-graph (the (report ::StandardIGraphImplementationReport ::schemaGraph))
          test-fn-var #'test-readme-eg-set-operations
          report' (report-atom report)
-         assert-and-report! (partial do-assert-and-report! report' test-fn-var)
-         ]
+         assert-and-report! (partial do-assert-and-report! report' test-fn-var)]
      (or
       (report-invalid-test-graph report eg-graph
                                  :test-fn-var test-fn-var
@@ -824,8 +806,7 @@ Where
          (igraph/normal-form (igraph/difference other-graph eg-graph))
          {:igraph-test/mary {:igraph-test/likes #{:igraph-test/pork}},
           :igraph-test/waldo {:igraph-test/isa #{:igraph-test/person},
-                              :igraph-test/likes #{:igraph-test/beer}}})
-        )))))
+                              :igraph-test/likes #{:igraph-test/beer}}}))))))
 
 (defn run-standard-implementation-tests
   "One-liner to test a fully-featured implemenation of all the IGraph protocols."
@@ -835,12 +816,10 @@ Where
       (test-readme-eg-mutation)
       (test-readme-eg-set-operations)
       (test-readme-eg-traversal)
-      (test-cardinality-1)
-      )
-  )
+      (test-cardinality-1)))
 
 (defn query-for-failures
-  "Returns #{`failure-binding`,...} for `report`
+  "Returns #{`failure-binding`,...} for `report`.
   Where
   - `failure-binding` := `m` s.t. (keys m) :~ #{:?test :?comment :?observed :?expected}
   - `report` is a graph put out by one or more tests in `test-support`
@@ -879,12 +858,10 @@ Where
                                   (maybe-assoc ::inTest)
                                   (maybe-assoc ::expected)
                                   (maybe-assoc ::observed)
-                                  )))
-        ]
+                                  )))]
     (reduce annotate
             #{}
             (native-normal/query-graph report
                                        [[:?test :rdf/type ::Failed]
-                                        [:?test :rdfs/comment :?comment]
-                                        ]))))
+                                        [:?test :rdfs/comment :?comment]]))))
 

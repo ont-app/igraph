@@ -1,0 +1,9 @@
+{:linters {:missing-protocol-method {:level :off} ;; spurious complaints in graph.cljc
+           :docstring-no-summary {:level :warning}
+           :missing-docstring {:level :warning}
+           :shadowed-var {:level :warning}
+           :unsorted-imports {:level :warning}
+           :unsorted-required-namespaces {:level :warning}
+           :unused-alias {:level :warning}
+           :used-underscored-binding {:level :warning}
+           :warn-on-reflection {:level :warning}}}

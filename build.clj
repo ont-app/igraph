@@ -9,7 +9,7 @@
 
 (def lib 'ont-app/igraph)
 
-(def version "0.2.2-SNAPSHOT")
+(def version "0.2.3-SNAPSHOT")
 
 (defn validate-deps
   "Throws an `ex-info` of type `::invalid-deps`, or returns `opts` unchanged"
@@ -60,7 +60,7 @@
       (bb/install)))
 
 (defn deploy
-  "Deploy the JAR to Clojars. Using $CLOJARS_USERNAME and $CLOJARS_PASSWORD"
+  "Deploy the JAR to Clojars. Using CLOJARS_USERNAME and  the CLOJARS_PASSWORD"
   [opts]
   (-> opts
       (assoc :lib lib :version version)

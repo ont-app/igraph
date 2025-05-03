@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## [0.2.3] - 
+- Refactoring the dev configurations a bit
+
 ## [0.2.2] - 2023-04-13
 - Metadata tweaks for efficiency
 - Clarifying documentation of test support
