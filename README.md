@@ -8,6 +8,9 @@ It also defines a `Graph` datatype which implements `IGraph`.
 
 There is a [15-minute video introduction here](https://www.youtube.com/watch?v=BlH__4iNHZE&amp;feature=youtu.be).
 
+API docs are available at https://cljdoc.org/d/ont-app/igraph/.
+
+
 ## Contents
 - [Dependencies](#h2-dependencies)
 - [Motivation](#h2-motivation)
