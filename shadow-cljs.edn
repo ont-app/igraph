@@ -1,5 +1,5 @@
 ;; shadow-cljs configuration
-{:deps {:aliases [shadow]}
+{:deps {:aliases [:shadow]}
   :builds
  {;; Runs shadow node-test
   ;; `shadow-cljs compile node-test`
